@@ -24,7 +24,7 @@ MIGRATIONS="$ROOT/backend/migrations"
 
 log() { printf '[migrate] %s\n' "$*"; }
 
-log "backend: $(db_backend), database: $DB_NAME"
+log "backend: $(db_backend), target: $(db_target)"
 
 if [[ "$DIRECTION" == "status" ]]; then
   log "tables currently in $DB_NAME:"

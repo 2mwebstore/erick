@@ -28,7 +28,7 @@ chmod 700 "$BACKUP_DIR"
 
 log() { printf '[backup] %s %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
-log "dumping $DB_NAME (backend: $(db_backend))"
+log "dumping $(db_target) (backend: $(db_backend))"
 
 # --single-transaction keeps the dump consistent without locking the table,
 # so a submission arriving mid-backup is neither blocked nor half-captured.

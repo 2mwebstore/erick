@@ -166,6 +166,22 @@ Compose or a MySQL installed on the host — they detect which is running (see
 ./scripts/migrate.sh down 0002  # roll one back
 ```
 
+Variables already in the environment win over both `.env` files, so the same
+scripts reach a hosted database. On Railway, pass the **MySQL** service's
+variables. The scripts connect through its public `MYSQL_PUBLIC_URL`, because
+the backend service's `DB_HOST` is a private address that only resolves inside
+Railway:
+
+```bash
+railway run --no-local --service MySQL ./scripts/backup-db.sh
+railway run --no-local --service MySQL ./scripts/migrate.sh status
+railway run --no-local --service MySQL ./scripts/migrate.sh up
+```
+
+Every script prints the host and database it is about to use before it acts.
+Check that line. If it shows `127.0.0.1`, it is working on your local database,
+not on Railway.
+
 ## Rollback
 
 ```bash

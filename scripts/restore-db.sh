@@ -49,7 +49,7 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 
 echo
-echo "This will REPLACE the contents of database '$DB_NAME'."
+echo "This will REPLACE the contents of $(db_target)."
 read -r -p "Type the database name to confirm: " CONFIRM
 [[ "$CONFIRM" == "$DB_NAME" ]] || { echo "aborted" >&2; exit 1; }
 
