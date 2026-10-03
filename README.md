@@ -74,7 +74,7 @@ anything already signed in elsewhere is signed out.
 **Passwords are not written down in this repository.** README.md is tracked by
 git, and a credential committed once stays in the history — and in every clone
 and fork — after it is deleted. Keep the current one in a password manager. The
-rules the API enforces: at least 12 characters, and no more than 72 bytes,
+rules the API enforces: at least 8 characters, and no more than 72 bytes,
 because bcrypt silently truncates past that rather than failing.
 
 If the panel shows a banner saying the API is running an older build, restart

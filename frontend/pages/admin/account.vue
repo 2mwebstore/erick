@@ -13,7 +13,7 @@ const { user, csrf, api } = useAdmin()
 const toast = useToast()
 
 /** Matches services/auth.go: length does the work, the character rule is light. */
-const MIN_LENGTH = 12
+const MIN_LENGTH = 8
 const MAX_BYTES = 72
 
 const form = reactive({ current: '', next: '', confirm: '' })
@@ -123,7 +123,7 @@ useHead({ title: 'Your account' })
           required
           autocomplete="new-password"
           :error="errors.next"
-          hint="At least 12 characters. Length does the work, so a passphrase beats a short password with symbols in it."
+          hint="At least 8 characters. Length does the work, so a passphrase beats a short password with symbols in it."
         />
 
         <AdminInput

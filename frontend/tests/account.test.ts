@@ -87,7 +87,7 @@ describe('changing your own password', () => {
     await submit(wrapper)
 
     expect(sent.body).toBeNull()
-    expect(wrapper.text()).toContain('Use at least 12 characters')
+    expect(wrapper.text()).toContain('Use at least 8 characters')
   })
 
   it('does not submit when the confirmation does not match', async () => {

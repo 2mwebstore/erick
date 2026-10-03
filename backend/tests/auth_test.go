@@ -204,6 +204,8 @@ func TestPasswordPolicy(t *testing.T) {
 		"long passphrase with a space": {"correct horse battery staple", true},
 		"letters and digits":           {"Portfolio2026Pass", true},
 		"too short":                    {"Short1!", false},
+		"exactly the minimum of 8":     {"abcd1234", true},
+		"one under the minimum":        {"abc1234", false},
 		"letters only":                 {"abcdefghijklmnop", false},
 		"digits only":                  {"12345678901234", false},
 		// bcrypt silently truncates beyond 72 bytes, so a longer password must be

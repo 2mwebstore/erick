@@ -36,7 +36,7 @@ const (
 
 	SessionDuration = 12 * time.Hour
 	sessionBytes    = 32
-	PasswordMin     = 12
+	PasswordMin     = 8
 	PasswordMax     = 200
 )
 
@@ -232,9 +232,8 @@ func HashPassword(password string) (string, error) {
 
 // ValidatePassword enforces length and variety.
 //
-// Length does most of the work, so the floor is high (12) and the character
-// rules are light — a long passphrase should not be rejected for lacking a
-// symbol. bcrypt silently truncates at 72 bytes, so anything longer is refused
+// The floor is 8 characters and the character rules are light — a long
+// passphrase should not be rejected for lacking a symbol. bcrypt silently truncates at 72 bytes, so anything longer is refused
 // rather than quietly shortened.
 func ValidatePassword(password string) error {
 	if len(password) > 72 {

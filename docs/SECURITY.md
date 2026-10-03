@@ -22,7 +22,7 @@ sessions, and a logout, password change or account deactivation revokes access
 immediately — a stateless token could not be withdrawn.
 
 **Passwords are bcrypt at cost 12** (~250 ms per verification): cheap for a
-handful of logins, expensive for an offline attacker. Minimum 12 characters, and
+handful of logins, expensive for an offline attacker. Minimum 8 characters, and
 anything over 72 bytes is refused rather than silently truncated, which is what
 bcrypt would otherwise do.
 

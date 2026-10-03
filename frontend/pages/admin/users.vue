@@ -107,7 +107,7 @@ useHead({ title: 'Users' })
 
       <AdminPanel
         title="Add an account"
-        description="Passwords must be at least 12 characters and mix letters with something else."
+        description="Passwords must be at least 8 characters and mix letters with something else."
       >
         <form class="space-y-4" novalidate @submit.prevent="create">
           <div class="grid gap-4 sm:grid-cols-2">
