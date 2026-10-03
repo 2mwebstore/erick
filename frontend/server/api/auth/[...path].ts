@@ -1,28 +1,13 @@
-import type { H3Event } from 'h3'
-
 /**
  * Auth proxy, kept separate from /api/admin/* because login has to be reachable
  * before a session exists.
  */
-const SKIP_REQUEST_HEADERS = new Set(['host', 'connection', 'content-length', 'accept-encoding'])
 const SKIP_RESPONSE_HEADERS = new Set([
   'content-encoding',
   'content-length',
   'transfer-encoding',
   'connection',
 ])
-
-function forwardedHeaders(event: H3Event): Record<string, string> {
-  const headers: Record<string, string> = {}
-  for (const [key, value] of Object.entries(getRequestHeaders(event))) {
-    if (!value || SKIP_REQUEST_HEADERS.has(key.toLowerCase())) continue
-    headers[key] = value
-  }
-  const ip =
-    getRequestHeader(event, 'cf-connecting-ip') ?? getRequestIP(event, { xForwardedFor: true }) ?? ''
-  if (ip) headers['x-real-ip'] = ip
-  return headers
-}
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -38,7 +23,7 @@ export default defineEventHandler(async (event) => {
       baseURL: config.apiBaseUrl,
       method: method as 'GET',
       body,
-      headers: forwardedHeaders(event),
+      headers: upstreamHeaders(event),
       timeout: Number(config.apiTimeoutMs) || 8000,
       ignoreResponseError: true,
     })
