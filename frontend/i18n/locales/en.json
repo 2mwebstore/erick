@@ -1,0 +1,164 @@
+{
+  "nav": {
+    "about": "About",
+    "work": "Work",
+    "capabilities": "Capabilities",
+    "services": "Services",
+    "contact": "Contact",
+    "primary": "Primary",
+    "mobile": "Mobile",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "home": "home",
+    "language": "Language",
+    "footer": "Footer",
+    "experience": "Experience"
+  },
+  "actions": {
+    "resume": "Resume",
+    "letsTalk": "Let's Talk",
+    "viewWork": "View work",
+    "backToHome": "Back to home",
+    "nextProject": "Next project",
+    "readCaseStudy": "Read case study",
+    "viewLive": "View live",
+    "sourceCode": "Source code",
+    "downloadResume": "Download resume",
+    "print": "Print",
+    "viewSelectedWork": "View Selected Work"
+  },
+  "sections": {
+    "about": {
+      "eyebrow": "About"
+    },
+    "work": {
+      "eyebrow": "Selected Work",
+      "title": "Selected Work",
+      "subtitle": "A selection of applications and systems I've worked on."
+    },
+    "capabilities": {
+      "eyebrow": "Technical Capabilities",
+      "title": "Technical Capabilities",
+      "subtitle": "The domains I work in, and the tools I use inside them. No proficiency percentages — depth shows in the case studies."
+    },
+    "services": {
+      "eyebrow": "Services",
+      "title": "What I Build",
+      "subtitle": "Engagements are scoped around the outcome you need, not a list of technologies."
+    },
+    "principles": {
+      "eyebrow": "Engineering Philosophy",
+      "title": "Built for Production"
+    },
+    "contact": {
+      "eyebrow": "Contact",
+      "title": "Let's Build Something",
+      "subtitle": "Have a product, business system, website, or application in mind? Let's discuss the requirements, technical approach, and next steps."
+    },
+    "experience": {
+      "eyebrow": "Experience",
+      "title": "Work Experience",
+      "subtitle": "My professional journey and the teams I've built with."
+    }
+  },
+  "contact": {
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "projectType": "Project Type",
+    "selectProjectType": "Select a project type",
+    "usefulToInclude": "Useful to include",
+    "hint": {
+      "what": "What the system needs to do",
+      "who": "Who will use it, and roughly how many",
+      "stack": "Any existing stack or hosting constraints",
+      "timeline": "Timeline and decision process"
+    },
+    "send": "Send Message",
+    "sending": "Sending…",
+    "sent": "Thank you — your message has been sent.",
+    "failed": "That did not send. Please try again, or email me directly.",
+    "phone": "Phone Number",
+    "subject": "Subject",
+    "location": "Location",
+    "information": "Contact Information",
+    "followMe": "Follow Me",
+    "closed": "The form is closed at the moment. Please email me directly:",
+    "placeholder": {
+      "name": "Enter your full name…",
+      "email": "you{'@'}example.com",
+      "phone": "Optional",
+      "subject": "Subject of your message…",
+      "message": "Write your message here…"
+    },
+    "type": {
+      "Web Application": "Web Application",
+      "Mobile Application": "Mobile Application",
+      "E-commerce": "E-commerce",
+      "Backend / API": "Backend / API",
+      "WordPress / SEO": "WordPress / SEO",
+      "DevOps": "DevOps",
+      "Other": "Other"
+    }
+  },
+  "resume": {
+    "title": "Resume",
+    "profile": "Profile",
+    "experience": "Experience",
+    "technicalSkills": "Technical Skills",
+    "selectedProjects": "Selected Projects",
+    "company": "Company",
+    "productionLifecycle": "Production lifecycle I own"
+  },
+  "work": {
+    "technology": "Technology",
+    "technicalDecisions": "Technical Decisions",
+    "wordpressSeo": "WordPress & SEO",
+    "overview": "Overview",
+    "context": "Context",
+    "problem": "Problem",
+    "role": "My Role",
+    "approach": "Approach",
+    "architecture": "Architecture",
+    "features": "Key Features",
+    "database": "Database",
+    "api": "API",
+    "security": "Security",
+    "deployment": "Deployment",
+    "challenges": "Challenges",
+    "outcome": "Outcome",
+    "breadcrumb": "Breadcrumb",
+    "title": "Work"
+  },
+  "error": {
+    "notFound": "Page not found",
+    "notFoundBody": "That page does not exist, or has moved.",
+    "generic": "Something went wrong",
+    "genericBody": "An unexpected error occurred. Please try again."
+  },
+  "content": {
+    "pending": "Content pending",
+    "pendingHint": "This text has not been written yet."
+  },
+  "footer": {
+    "navigate": "Navigate",
+    "allWork": "All work",
+    "direct": "Direct"
+  },
+  "hero": {
+    "fullTime": "Full-time software development"
+  },
+  "experience": {
+    "current": "Current"
+  },
+  "lifecycle": [
+    "Architecture",
+    "Development",
+    "Database",
+    "Security",
+    "Deployment",
+    "Monitoring",
+    "Backup",
+    "Maintenance"
+  ]
+}

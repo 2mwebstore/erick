@@ -1,0 +1,469 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode, toggled on <html> by composables/useTheme.ts */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+
+   Neutral base + one restrained accent. Every token is defined here once for
+   light, once for dark; components only ever reference the semantic name.
+   --------------------------------------------------------------------------- */
+:root {
+  /*
+     Coastal blues: #0A1931 #1A3D63 #4A7FA7 #B3CFE5 #F6FAFD.
+
+     The palette is a single hue ramp, which makes the middle of it the problem.
+     #4A7FA7 sits at 0.19 relative luminance: 4.10:1 on the pale end and 4.08:1
+     on the dark end, so it clears 4.5:1 against neither and cannot be text in
+     either theme. It is not wasted — it is the only colour here with real
+     character, so it does the one job that has no contrast requirement and
+     carries the background wash. Text uses shades either side of it.
+
+     Every pairing is asserted in tests/colour.test.ts.
+  */
+  --bg: #f6fafd;
+  --surface: #ffffff;
+  --elevated: #ffffff;
+  --border: #d5e3ef;
+  --border-strong: #b3cfe5;
+  --fg: #0a1931;
+  --fg-muted: #1a3d63;
+  /* Desaturated, so quiet text does not read as a link. */
+  --fg-subtle: #5f7383;
+  /* #4A7FA7 taken down until it clears 4.5:1 on the paper. */
+  --accent: #45779c;
+  --accent-hover: #396180;
+  /* Fills: #4A7FA7 would only manage 4.10:1 under a label, so the deep blue
+     takes the buttons and the palette inverts them in dark mode. */
+  --accent-solid: #1a3d63;
+  --accent-solid-hover: #0a1931;
+  --accent-fg: #f6fafd;
+  --accent-weak: #eaf2f9;
+  --ring: #45779c;
+  /* Decorative only — never behind text at a legible size. */
+  --wash-a: #4a7fa7;
+  --wash-b: #1a3d63;
+}
+
+
+:root.dark {
+  /*
+     Ink ground, deep-blue panels, pale blue on top — the light theme turned
+     inside out rather than a different palette.
+  */
+  --bg: #0a1931;
+  --surface: #102544;
+  --elevated: #1a3d63;
+  --border: #1e3a5c;
+  --border-strong: #2f5680;
+  --fg: #f6fafd;
+  --fg-muted: #b3cfe5;
+  --fg-subtle: #9aa8b2;
+  /* #4A7FA7 lifted until it clears 4.5:1 on the lightest panel. */
+  --accent: #84abc9;
+  --accent-hover: #a8c3d8;
+  --accent-solid: #b3cfe5;
+  --accent-solid-hover: #d2e3f0;
+  --accent-fg: #0a1931;
+  --accent-weak: #12294a;
+  --ring: #84abc9;
+  --wash-a: #4a7fa7;
+  --wash-b: #b3cfe5;
+}
+
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-weak: var(--accent-weak);
+  /* The brand gold, for fills only — see the note on :root. */
+  --color-accent-solid: var(--accent-solid);
+  --color-wash-a: var(--wash-a);
+  --color-wash-b: var(--wash-b);
+  --color-accent-solid-hover: var(--accent-solid-hover);
+
+  --font-sans: 'Inter', 'Kantumruy Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Kantumruy Pro', ui-monospace, 'SFMono-Regular', monospace;
+
+  /*
+     Kantumruy Pro needs a token of its own, and that token has to be used.
+
+     Two things silently stop the font being downloaded. @nuxt/fonts emits an
+     @font-face only for the *first* family in a stack — everything after it is
+     assumed to be a system fallback — so naming it second in --font-sans above
+     fetches nothing. And an @theme token nothing references is tree-shaken by
+     Tailwind before the font module ever sees it. Listing it here and applying
+     it in the :lang(km) rule below satisfies both; the build ships 8 Khmer
+     faces, and dropping either half silently ships none.
+  */
+  --font-khmer: 'Kantumruy Pro', 'Noto Sans Khmer', sans-serif;
+
+  --text-display: 3.75rem;
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.035em;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* offset for the sticky header when jumping to #anchors */
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+     Khmer text, wherever it appears — a whole page under <html lang="km"> or a
+     single element marked lang="km" inside an English one.
+
+     Khmer needs more room than Latin: the script stacks diacritics above and
+     below the baseline, and at Inter's line-height they collide with the line
+     above. The taller line-height applies only to Khmer runs, so English
+     typography is untouched.
+  */
+  :lang(km) {
+    font-family: var(--font-khmer);
+    line-height: 1.75;
+    font-feature-settings: normal;
+    font-variation-settings: normal;
+  }
+
+  /* Subtle, token-driven theme transition (§4) */
+  body,
+  header,
+  aside,
+  section,
+  article {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Never rely on the outline alone being suppressed */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Small-caps technical label used to head every section (§5) */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-subtle);
+  }
+
+  /**
+   * Brand-coloured technology mark. The colour arrives as --tc / --tc-dark from
+   * utils/tech-icons.ts; several brand colours are unreadable on one of the two
+   * backgrounds, so dark mode picks the lighter variant.
+   */
+  .tech-icon {
+    color: var(--tc, currentColor);
+  }
+
+  :root.dark .tech-icon {
+    color: var(--tc-dark, var(--tc, currentColor));
+  }
+
+  .hairline {
+    border-top: 1px solid var(--border);
+  }
+
+  /*
+     Rich text written in the admin panel.
+
+     Styled here rather than with utility classes because the markup is
+     generated by utils/richtext.ts, which has no place emitting Tailwind class
+     names. The set is deliberately small — the same set the editor can write.
+  */
+  .prose-rich > p + p,
+  .prose-rich > ul,
+  .prose-rich > ol {
+    margin-top: 0.85em;
+  }
+
+  .prose-rich strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .prose-rich code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--fg);
+  }
+
+  .prose-rich a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 150ms;
+  }
+
+  .prose-rich a:hover {
+    color: var(--accent-hover);
+  }
+
+  .prose-rich ul,
+  .prose-rich ol {
+    margin-left: 1.15em;
+    list-style: revert;
+  }
+
+  .prose-rich li + li {
+    margin-top: 0.3em;
+  }
+
+  /*
+     Scroll reveal — opt-in, one-shot, no parallax (§25).
+
+     Everything here runs once, on the way in, and then stops. Nothing is tied
+     to scroll position and nothing loops, so a finished page is a still page.
+
+     Variants exist so a grid does not animate like a list: a card can grow in,
+     a column can arrive from the side it sits on, and a heading can settle out
+     of a slight blur. `--reveal-delay` staggers siblings.
+  */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 620ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter 620ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  /* Arrives from the side it lives on, so two columns meet in the middle. */
+  .reveal-left {
+    transform: translate3d(-18px, 6px, 0);
+  }
+
+  .reveal-right {
+    transform: translate3d(18px, 6px, 0);
+  }
+
+  /* For cards and media: grows the last few percent rather than sliding. */
+  .reveal-scale {
+    transform: scale(0.97);
+  }
+
+  /* For headings: settles out of a slight blur, which reads as focus pulling in. */
+  .reveal-blur {
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  /* Once it has arrived, stop promoting it to its own layer. */
+  .reveal.is-settled {
+    will-change: auto;
+  }
+
+  /*
+     Reduced motion means no movement, not no site: everything is simply
+     present. The delay is cleared too, or content would appear late for the
+     people least well served by waiting.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal-left,
+    .reveal-right,
+    .reveal-scale,
+    .reveal-blur {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition: none;
+      transition-delay: 0ms;
+    }
+  }
+}
+
+@layer components {
+  /*
+     The name, painted with a gradient that keeps moving.
+
+     Colour in motion: the gradient is clipped to the glyphs and travels through
+     them on a long, even loop. It is seamless rather than a sweep that restarts
+     — the ramp begins and ends on the same colour and shifts by exactly one
+     tile, so there is no point in the cycle where anything jumps.
+
+     Only the paint moves. The text never shifts, reflows or changes size, so
+     the one thing on the page that runs continuously cannot disturb reading.
+     The stops are palette tokens, and each clears 4.5:1 on its own background
+     (accent, the lightest, sits at 4.58), which means the name is AA as normal
+     text at every point of the ramp — not merely as the large text it is.
+  */
+  .headline-gradient {
+    background-image: linear-gradient(
+      100deg,
+      var(--fg) 0%,
+      var(--accent) 12.5%,
+      var(--accent-solid) 25%,
+      var(--accent) 37.5%,
+      var(--fg) 50%,
+      var(--accent) 62.5%,
+      var(--accent-solid) 75%,
+      var(--accent) 87.5%,
+      var(--fg) 100%
+    );
+    /*
+       Two full turns of the ramp across a tile twice the width of the text, so
+       whatever half of it is showing always holds one complete cycle. With a
+       single turn there were moments when the whole name sat on the same stop
+       and read as flat ink — a gradient you have to wait for is not a gradient.
+    */
+    background-size: 200% 100%;
+    /* Repeating, not `no-repeat`: the loop works by scrolling one whole tile
+       past, and a single tile would run out halfway. */
+    background-repeat: repeat;
+    /*
+       The ramp is measured against this element's own box. On the section
+       heading — a block — that box is the whole column, so the letters only
+       ever sampled the first third of it and the name sat on one stop looking
+       like flat ink. `fit-content` makes the box the width of the text; on the
+       inline span in the hero headline it does nothing at all, because width
+       does not apply to an inline box.
+    */
+    width: fit-content;
+    max-width: 100%;
+    /*
+       Its own colour, so the class carries its fallback rather than depending
+       on whatever the caller happened to set. The support query below replaces
+       it with the gradient where the clip works, and leaves it alone where it
+       does not.
+    */
+    color: var(--fg);
+    /* Painted per line, so a name that wraps keeps the ramp on each line
+       instead of stretching one across the block. */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /*
+     Transparent text is only safe where the clip is understood: without the
+     query a browser that ignores `background-clip: text` paints an invisible
+     heading over a gradient block. Inside it, the colour above is replaced by
+     the gradient; outside, it stays the colour it always was.
+  */
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .headline-gradient {
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      /* Clipping to the glyphs also clips the descenders of a Khmer
+         subscript, which sit below the Latin baseline. */
+      padding-bottom: 0.08em;
+      animation: headline-gradient-flow 7s linear infinite;
+    }
+  }
+
+  /* One whole tile, so the end state is pixel-identical to the start. */
+  @keyframes headline-gradient-flow {
+    from {
+      background-position: 0% 50%;
+    }
+    to {
+      background-position: 200% 50%;
+    }
+  }
+
+  /*
+     Reduced motion keeps the colour and drops the movement: a gradient is a
+     design, a gradient that travels is an animation, and only the second was
+     opted out of.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .headline-gradient {
+      animation: none;
+      background-position: 38% 50%;
+    }
+  }
+
+  /*
+     Two places where clipped text would come out blank rather than coloured:
+     a high-contrast mode that replaces the author's colours with the system's,
+     and a printer that drops backgrounds. Both get plain ink.
+  */
+  @media (forced-colors: active), print {
+    .headline-gradient {
+      background-image: none;
+      color: var(--fg);
+      animation: none;
+    }
+  }
+}

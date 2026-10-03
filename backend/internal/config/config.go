@@ -1,0 +1,177 @@
+// Package config loads runtime configuration from the environment.
+//
+// Nothing is read from a committed file and nothing has a production-safe
+// hard-coded default: the process refuses to start if a required secret is
+// missing, which is preferable to starting with a guessable one (§31, §34).
+package config
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type Config struct {
+	Env             string
+	Host            string
+	Port            string
+	ShutdownTimeout time.Duration
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+
+	DB DBConfig
+
+	// RateLimit is applied per client IP to POST /v1/contact.
+	RateLimitRequests int
+	RateLimitWindow   time.Duration
+
+	MaxBodyBytes int64
+	// Admin payloads carry full case-study text, so they need a larger cap than
+	// a contact message.
+	MaxAdminBodyBytes int64
+
+	// SecureCookies marks session cookies Secure. Must be true in production;
+	// false only for plain-HTTP local development, where the browser would
+	// otherwise refuse to store them.
+	SecureCookies bool
+
+	// LoginRateLimit is deliberately separate from and tighter than the contact
+	// form limit — this is the endpoint where guessing is the attack.
+	LoginRateLimit  int
+	LoginRateWindow time.Duration
+
+	// TrustedProxy enables reading the client IP from X-Forwarded-For.
+	// Only enable it when the service genuinely sits behind a proxy you control,
+	// otherwise the header is attacker-controlled and defeats rate limiting.
+	TrustedProxy bool
+}
+
+type DBConfig struct {
+	Host         string
+	Port         string
+	Name         string
+	User         string
+	Password     string
+	MaxOpenConns int
+	MaxIdleConns int
+	ConnLifetime time.Duration
+	// Enabled is false when the service runs without persistence.
+	Enabled bool
+}
+
+func (c Config) Addr() string { return c.Host + ":" + c.Port }
+
+func (c Config) IsProduction() bool { return c.Env == "production" }
+
+// DSN returns a go-sql-driver compatible DSN. Kept out of logs deliberately.
+func (d DBConfig) DSN() string {
+	return fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci&timeout=5s&readTimeout=5s&writeTimeout=5s",
+		d.User, d.Password, d.Host, d.Port, d.Name,
+	)
+}
+
+// Load reads configuration from the environment and validates it.
+//
+// A .env file in the working directory is loaded first, for local development.
+// It never overrides a variable that is already set, so containers and systemd
+// are unaffected by one being present.
+func Load() (Config, error) {
+	if err := LoadDotEnv(); err != nil {
+		return Config{}, err
+	}
+
+	cfg := Config{
+		Env:               env("APP_ENV", "development"),
+		Host:              env("HOST", "0.0.0.0"),
+		Port:              env("PORT", "8080"),
+		ShutdownTimeout:   duration("SHUTDOWN_TIMEOUT", 15*time.Second),
+		ReadTimeout:       duration("READ_TIMEOUT", 10*time.Second),
+		WriteTimeout:      duration("WRITE_TIMEOUT", 15*time.Second),
+		IdleTimeout:       duration("IDLE_TIMEOUT", 60*time.Second),
+		RateLimitRequests: integer("RATE_LIMIT_REQUESTS", 5),
+		RateLimitWindow:   duration("RATE_LIMIT_WINDOW", time.Hour),
+		MaxBodyBytes:      int64(integer("MAX_BODY_BYTES", 16*1024)),
+		MaxAdminBodyBytes: int64(integer("MAX_ADMIN_BODY_BYTES", 256*1024)),
+		SecureCookies:     boolean("SECURE_COOKIES", env("APP_ENV", "development") == "production"),
+		LoginRateLimit:    integer("LOGIN_RATE_LIMIT", 10),
+		LoginRateWindow:   duration("LOGIN_RATE_WINDOW", 15*time.Minute),
+		TrustedProxy:      boolean("TRUSTED_PROXY", true),
+		DB: DBConfig{
+			Host:         env("DB_HOST", "127.0.0.1"),
+			Port:         env("DB_PORT", "3306"),
+			Name:         env("DB_NAME", "portfolio"),
+			User:         env("DB_USER", ""),
+			Password:     env("DB_PASSWORD", ""),
+			MaxOpenConns: integer("DB_MAX_OPEN_CONNS", 10),
+			MaxIdleConns: integer("DB_MAX_IDLE_CONNS", 5),
+			ConnLifetime: duration("DB_CONN_LIFETIME", 30*time.Minute),
+			Enabled:      boolean("DB_ENABLED", true),
+		},
+	}
+
+	if cfg.DB.Enabled {
+		if cfg.DB.User == "" {
+			return cfg, fmt.Errorf("config: DB_USER is required when DB_ENABLED is true")
+		}
+		if cfg.DB.Password == "" {
+			return cfg, fmt.Errorf("config: DB_PASSWORD is required when DB_ENABLED is true")
+		}
+	}
+
+	if cfg.RateLimitRequests < 1 {
+		return cfg, fmt.Errorf("config: RATE_LIMIT_REQUESTS must be at least 1")
+	}
+
+	if cfg.LoginRateLimit < 1 {
+		return cfg, fmt.Errorf("config: LOGIN_RATE_LIMIT must be at least 1")
+	}
+
+	// A zero cap would reject every request that carries a body, since the
+	// middleware compares Content-Length against it.
+	if cfg.MaxBodyBytes < 1 {
+		return cfg, fmt.Errorf("config: MAX_BODY_BYTES must be positive")
+	}
+	if cfg.MaxAdminBodyBytes < 1 {
+		return cfg, fmt.Errorf("config: MAX_ADMIN_BODY_BYTES must be positive")
+	}
+
+	// A session cookie without Secure in production would travel in plaintext on
+	// any non-TLS hop, so refuse to start rather than issue one.
+	if cfg.IsProduction() && !cfg.SecureCookies {
+		return cfg, fmt.Errorf("config: SECURE_COOKIES cannot be false when APP_ENV=production")
+	}
+
+	return cfg, nil
+}
+
+func env(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func integer(key string, fallback int) int {
+	if v, err := strconv.Atoi(env(key, "")); err == nil {
+		return v
+	}
+	return fallback
+}
+
+func duration(key string, fallback time.Duration) time.Duration {
+	if v, err := time.ParseDuration(env(key, "")); err == nil {
+		return v
+	}
+	return fallback
+}
+
+func boolean(key string, fallback bool) bool {
+	if v, err := strconv.ParseBool(env(key, "")); err == nil {
+		return v
+	}
+	return fallback
+}

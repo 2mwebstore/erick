@@ -1,0 +1,11 @@
+node_modules
+.nuxt
+.output
+.data
+dist
+tests
+.env
+.env.*
+*.log
+.DS_Store
+coverage
