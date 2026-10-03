@@ -35,8 +35,8 @@ registerHooks({
 const { projects } = await import('../content/projects.ts')
 const { timeline, aboutParagraphs } = await import('../content/experience.ts')
 const { capabilities, wordpressSeoStack } = await import('../content/capabilities.ts')
-const { principles, services } = await import('../content/services.ts')
-const { positioningPillars, siteConfig } = await import('../content/site.ts')
+const { services } = await import('../content/services.ts')
+const { siteConfig } = await import('../content/site.ts')
 
 /** MySQL string literal, or NULL. */
 function q(value) {
@@ -123,7 +123,7 @@ say('-- ── Capabilities ─────────────────�
 capabilities.forEach((c, i) => {
   say(`
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (${q(c.id)}, ${q(c.title)}, ${q(c.description)}, ${q(c.icon)}, ${json(c.items)}, ${i})
+VALUES (${q(c.slug)}, ${q(c.title)}, ${q(c.description)}, ${q(c.icon)}, ${json(c.items)}, ${i})
 ON DUPLICATE KEY UPDATE slug = slug;`)
 })
 
@@ -133,33 +133,14 @@ say('-- ── Services ──────────────────�
 services.forEach((s, i) => {
   say(`
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (${q(s.id)}, ${q(s.title)}, ${q(s.description)}, ${q(s.icon)}, ${i})
+VALUES (${q(s.slug)}, ${q(s.title)}, ${q(s.description)}, ${q(s.icon)}, ${i})
 ON DUPLICATE KEY UPDATE slug = slug;`)
 })
 
-// ── Principles ──────────────────────────────────────────────────────────────
-// Moved into the database in migration 0006; seeding them here keeps a fresh
-// install identical to an upgraded one.
-say()
-say('-- ── Principles ─────────────────────────────────────────────────────────────')
-principles.forEach((p, i) => {
-  say(`
-INSERT INTO principles (slug, title, description, icon, sort_order)
-VALUES (${q(p.slug)}, ${q(p.title)}, ${q(p.description)}, ${q(p.icon)}, ${i})
-ON DUPLICATE KEY UPDATE slug = slug;`)
-})
-
-// ── Positioning pillars ─────────────────────────────────────────────────────
-// Moved into the database in migration 0007. Numbered by position on the page,
-// so the order here is the only thing that decides 01/02/03.
-say()
-say('-- ── Positioning pillars ────────────────────────────────────────────────────')
-positioningPillars.forEach((p, i) => {
-  say(`
-INSERT INTO pillars (slug, title, description, sort_order)
-VALUES (${q(p.slug)}, ${q(p.title)}, ${q(p.description)}, ${i})
-ON DUPLICATE KEY UPDATE slug = slug;`)
-})
+// ── Principles and positioning pillars ──────────────────────────────────────
+// Not seeded here. Their tables are created by migrations 0006 and 0007, which
+// run after this file, and those migrations insert the same rows themselves.
+// Inserting them from 0003 failed every fresh install on a missing table.
 
 // ── Settings ────────────────────────────────────────────────────────────────
 say()
@@ -205,8 +186,6 @@ await writeFile(
   `-- Removes the seeded content. Destructive: anything edited in /admin since
 -- seeding is deleted too. Take a backup first (scripts/backup-db.sh).
 DELETE FROM site_settings;
-DELETE FROM pillars;
-DELETE FROM principles;
 DELETE FROM services;
 DELETE FROM capabilities;
 DELETE FROM experience_entries;

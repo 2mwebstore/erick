@@ -171,93 +171,61 @@ INSERT INTO experience_entries (label, title, description, sort_order) SELECT '2
 -- ── Capabilities ───────────────────────────────────────────────────────────
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Software Architecture', 'System architecture, modular design, maintainable project structures, and scalable application design.', 'lucide:layout-template', '["System design","Modular structure","Domain separation","Code review","Documentation"]', 0)
+VALUES ('architecture', 'Software Architecture', 'System architecture, modular design, maintainable project structures, and scalable application design.', 'lucide:layout-template', '["System design","Modular structure","Domain separation","Code review","Documentation"]', 0)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Backend & APIs', 'Business logic, REST APIs, authentication, authorization, validation, and third-party integrations.', 'lucide:server', '["Go","Laravel / PHP","REST","Auth & sessions","Validation","Integrations"]', 1)
+VALUES ('backend', 'Backend & APIs', 'Business logic, REST APIs, authentication, authorization, validation, and third-party integrations.', 'lucide:server', '["Go","Laravel / PHP","REST","Auth & sessions","Validation","Integrations"]', 1)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Frontend', 'Responsive, API-driven interfaces with a typed component architecture and measured performance.', 'lucide:monitor', '["Vue 3","Nuxt","TypeScript","Tailwind CSS","SSR / SSG","Accessibility"]', 2)
+VALUES ('frontend', 'Frontend', 'Responsive, API-driven interfaces with a typed component architecture and measured performance.', 'lucide:monitor', '["Vue 3","Nuxt","TypeScript","Tailwind CSS","SSR / SSG","Accessibility"]', 2)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Mobile', 'Cross-platform mobile applications sharing the same backend contracts as the web clients.', 'lucide:smartphone', '["Flutter","Android","iOS","Firebase","Mobile API integration","Release builds"]', 3)
+VALUES ('mobile', 'Mobile', 'Cross-platform mobile applications sharing the same backend contracts as the web clients.', 'lucide:smartphone', '["Flutter","Android","iOS","Firebase","Mobile API integration","Release builds"]', 3)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Data', 'Relational design that holds up under real data volume, with integrity and recovery planned in.', 'lucide:database', '["MySQL","Schema design","Migrations","Indexing","Query optimisation","Backup & recovery"]', 4)
+VALUES ('data', 'Data', 'Relational design that holds up under real data volume, with integrity and recovery planned in.', 'lucide:database', '["MySQL","Schema design","Migrations","Indexing","Query optimisation","Backup & recovery"]', 4)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Infrastructure', 'Provisioning, serving, and routing production applications on Linux and managed platforms.', 'lucide:cloud', '["Linux / Ubuntu","Docker","Nginx","VPS","Railway","DigitalOcean","Cloudflare","cPanel"]', 5)
+VALUES ('infrastructure', 'Infrastructure', 'Provisioning, serving, and routing production applications on Linux and managed platforms.', 'lucide:cloud', '["Linux / Ubuntu","Docker","Nginx","VPS","Railway","DigitalOcean","Cloudflare","cPanel"]', 5)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Security', 'Application and infrastructure hardening treated as part of the build, not a later pass.', 'lucide:shield-check', '["Authentication","Authorization","Input validation","HTTPS / TLS","API protection","Rate limiting","Secure configuration"]', 6)
+VALUES ('security', 'Security', 'Application and infrastructure hardening treated as part of the build, not a later pass.', 'lucide:shield-check', '["Authentication","Authorization","Input validation","HTTPS / TLS","API protection","Rate limiting","Secure configuration"]', 6)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO capabilities (slug, title, description, icon, items, sort_order)
-VALUES (NULL, 'Production', 'Keeping systems observable and recoverable once real users depend on them.', 'lucide:activity', '["Logging","Monitoring","Health checks","Error handling","Backups","Deployment","Maintenance"]', 7)
+VALUES ('production', 'Production', 'Keeping systems observable and recoverable once real users depend on them.', 'lucide:activity', '["Logging","Monitoring","Health checks","Error handling","Backups","Deployment","Maintenance"]', 7)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 -- ── Services ───────────────────────────────────────────────────────────────
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'Custom Web Applications', 'Business systems, dashboards, portals, customer applications, and internal tools built around your actual workflow.', 'lucide:app-window', 0)
+VALUES ('web-apps', 'Custom Web Applications', 'Business systems, dashboards, portals, customer applications, and internal tools built around your actual workflow.', 'lucide:app-window', 0)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'Backend & API Systems', 'Secure APIs, business logic, integrations, authentication, and the database design underneath them.', 'lucide:server-cog', 1)
+VALUES ('backend', 'Backend & API Systems', 'Secure APIs, business logic, integrations, authentication, and the database design underneath them.', 'lucide:server-cog', 1)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'Mobile Applications', 'Cross-platform mobile applications using Flutter, sharing one backend with your web product.', 'lucide:smartphone', 2)
+VALUES ('mobile', 'Mobile Applications', 'Cross-platform mobile applications using Flutter, sharing one backend with your web product.', 'lucide:smartphone', 2)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'E-commerce', 'Product catalogues, customer accounts, orders, payments, promotions, and the administration system that runs them.', 'lucide:shopping-bag', 3)
+VALUES ('ecommerce', 'E-commerce', 'Product catalogues, customer accounts, orders, payments, promotions, and the administration system that runs them.', 'lucide:shopping-bag', 3)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'WordPress & SEO', 'Professional websites with Elementor, plus technical SEO, performance optimisation, and hosting setup.', 'lucide:search', 4)
+VALUES ('wordpress-seo', 'WordPress & SEO', 'Professional websites with Elementor, plus technical SEO, performance optimisation, and hosting setup.', 'lucide:search', 4)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 INSERT INTO services (slug, title, description, icon, sort_order)
-VALUES (NULL, 'Production Deployment', 'Docker, Linux, VPS, Nginx, Cloudflare, backups, monitoring, and the operational work after launch.', 'lucide:rocket', 5)
-ON DUPLICATE KEY UPDATE slug = slug;
-
--- ── Principles ─────────────────────────────────────────────────────────────
-
-INSERT INTO principles (slug, title, description, icon, sort_order)
-VALUES ('architecture', 'Architecture', 'Designed before implementation, so the structure survives the second and third feature.', 'lucide:compass', 0)
-ON DUPLICATE KEY UPDATE slug = slug;
-
-INSERT INTO principles (slug, title, description, icon, sort_order)
-VALUES ('security', 'Security', 'Considered from the application layer down to the infrastructure it runs on.', 'lucide:lock', 1)
-ON DUPLICATE KEY UPDATE slug = slug;
-
-INSERT INTO principles (slug, title, description, icon, sort_order)
-VALUES ('reliability', 'Reliability', 'Errors, backups, monitoring, and recovery are part of the system, not an afterthought.', 'lucide:heart-pulse', 2)
-ON DUPLICATE KEY UPDATE slug = slug;
-
-INSERT INTO principles (slug, title, description, icon, sort_order)
-VALUES ('maintainability', 'Maintainability', 'Clean structure and documentation so future development does not start with archaeology.', 'lucide:wrench', 3)
-ON DUPLICATE KEY UPDATE slug = slug;
-
--- ── Positioning pillars ────────────────────────────────────────────────────
-
-INSERT INTO pillars (slug, title, description, sort_order)
-VALUES ('experience', 'Experience', 'Professional full-time software development since 2020.', 0)
-ON DUPLICATE KEY UPDATE slug = slug;
-
-INSERT INTO pillars (slug, title, description, sort_order)
-VALUES ('technical-breadth', 'Technical breadth', 'Backend, frontend, mobile, databases, APIs, infrastructure, WordPress, SEO, and cloud deployment.', 1)
-ON DUPLICATE KEY UPDATE slug = slug;
-
-INSERT INTO pillars (slug, title, description, sort_order)
-VALUES ('production-ownership', 'Production ownership', 'Architecture, development, database, security, deployment, monitoring, backup, and maintenance — not just writing code.', 2)
+VALUES ('deployment', 'Production Deployment', 'Docker, Linux, VPS, Nginx, Cloudflare, backups, monitoring, and the operational work after launch.', 'lucide:rocket', 5)
 ON DUPLICATE KEY UPDATE slug = slug;
 
 -- ── Site settings ──────────────────────────────────────────────────────────

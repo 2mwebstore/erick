@@ -66,6 +66,39 @@ func TestLoadRejectsZeroRateLimit(t *testing.T) {
 	}
 }
 
+func TestLoadMigratesOnStartByDefault(t *testing.T) {
+	t.Setenv("DB_ENABLED", "false")
+	t.Setenv("DB_AUTO_MIGRATE", "")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !cfg.DB.AutoMigrate {
+		t.Error("a fresh database must get its schema without anyone opting in")
+	}
+	if cfg.SeedAdmin.Enabled() {
+		t.Error("no admin account should be seeded unless one is configured")
+	}
+}
+
+func TestLoadRejectsHalfASeedAdmin(t *testing.T) {
+	for name, vars := range map[string][2]string{
+		"email only":    {"you@example.com", ""},
+		"password only": {"", "a long enough passphrase"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("DB_ENABLED", "false")
+			t.Setenv("SEED_ADMIN_EMAIL", vars[0])
+			t.Setenv("SEED_ADMIN_PASSWORD", vars[1])
+
+			if _, err := config.Load(); err == nil {
+				t.Fatal("expected Load to refuse a seed admin missing half its settings")
+			}
+		})
+	}
+}
+
 func TestDSNContainsNoLoggableSecretByAccident(t *testing.T) {
 	// The DSN necessarily contains the password; this test documents that fact so
 	// nobody logs cfg.DB.DSN() casually. It must never be passed to a logger.

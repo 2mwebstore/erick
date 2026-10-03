@@ -19,6 +19,7 @@ import (
 	"github.com/kongchansila/portfolio/backend/internal/config"
 	"github.com/kongchansila/portfolio/backend/internal/database"
 	"github.com/kongchansila/portfolio/backend/internal/middleware"
+	"github.com/kongchansila/portfolio/backend/internal/models"
 	"github.com/kongchansila/portfolio/backend/internal/repositories"
 	"github.com/kongchansila/portfolio/backend/internal/routes"
 	"github.com/kongchansila/portfolio/backend/internal/services"
@@ -76,6 +77,16 @@ func run() error {
 			}
 		}()
 
+		// Before anything reads a table: a fresh database gets its schema and
+		// seed content here, and an existing one gets whatever is new.
+		if cfg.DB.AutoMigrate {
+			if err := database.Migrate(ctx, cfg.DB, log); err != nil {
+				return err
+			}
+		} else {
+			log.Warn("DB_AUTO_MIGRATE is false — pending migrations were not applied")
+		}
+
 		messages = repositories.NewContactRepository(db)
 		contentRepo = repositories.NewContentRepository(db)
 		translationRepo = repositories.NewTranslationRepository(db)
@@ -84,6 +95,8 @@ func run() error {
 		audit = services.NewAuditService(repositories.NewAuditRepository(db), log)
 
 		log.Info("database connected", slog.String("name", cfg.DB.Name))
+
+		seedAdmin(ctx, cfg.SeedAdmin, authService, log)
 	} else {
 		// Without a database there is no content and no admin; the site falls
 		// back to its bundled defaults and the contact form rejects submissions.
@@ -155,6 +168,42 @@ func run() error {
 
 	log.Info("stopped cleanly")
 	return nil
+}
+
+// seedAdmin creates the first admin account from SEED_ADMIN_*, and only while
+// there are no accounts at all — so a restart can never reset a password that
+// was changed in the panel since.
+//
+// A failure is logged rather than fatal: the public site does not need an
+// account, and should not go down over a seed password that is too short.
+func seedAdmin(ctx context.Context, seed config.SeedAdminConfig, auth *services.AuthService, log *slog.Logger) {
+	if !seed.Enabled() {
+		return
+	}
+
+	count, err := auth.UserCount(ctx)
+	if err != nil {
+		log.Error("seeding admin: counting accounts", slog.String("error", err.Error()))
+		return
+	}
+	if count > 0 {
+		log.Warn("SEED_ADMIN_PASSWORD is still set but accounts already exist, so it is unused — remove it")
+		return
+	}
+
+	user, err := auth.CreateUser(ctx, seed.Email, seed.Name, seed.Password, models.RoleAdmin)
+	if err != nil {
+		var invalid *services.ValidationError
+		if errors.As(err, &invalid) {
+			log.Error("seeding admin: account not created", slog.Any("fields", invalid.Fields))
+			return
+		}
+		log.Error("seeding admin: account not created", slog.String("error", err.Error()))
+		return
+	}
+
+	log.Info("seeded admin account — sign in, change the password in the panel, then remove SEED_ADMIN_PASSWORD",
+		slog.String("email", user.Email))
 }
 
 // startSessionPurge deletes expired sessions periodically.

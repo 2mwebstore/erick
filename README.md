@@ -24,10 +24,11 @@ go run ./cmd/api                # http://localhost:8080/health
 # The admin panel is at http://localhost:3000/admin — see "Signing in" below.
 # Keep the password in a password manager, not in this file.
 
-# Using a MySQL you already run locally rather than Docker? Create the database,
-# point backend/.env at it, then apply the schema:
+# Using a MySQL you already run locally rather than Docker? Create the database
+# and point backend/.env at it. The API applies the schema and seed content
+# when it starts. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in backend/.env
+# to create the first admin account at the same time.
 ./scripts/migrate.sh status     # what is there now
-./scripts/migrate.sh up         # create contact_messages
 ```
 
 Or the whole stack as it runs in production:
@@ -110,6 +111,7 @@ go run ./cmd/adminctl create -email … -name "…"   # first admin account
 go run ./cmd/adminctl list
 go run ./cmd/adminctl passwd -email …
 go test ./...
+MIGRATE_TEST_MYSQL=1 DB_USER=root DB_PASSWORD=… go test ./internal/database   # migrations on a real MySQL
 go test -race ./...
 go vet ./...
 

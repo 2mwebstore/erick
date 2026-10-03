@@ -47,7 +47,23 @@ type Config struct {
 	// Only enable it when the service genuinely sits behind a proxy you control,
 	// otherwise the header is attacker-controlled and defeats rate limiting.
 	TrustedProxy bool
+
+	// SeedAdmin is the first admin account, created at startup only while the
+	// database has no accounts at all.
+	SeedAdmin SeedAdminConfig
 }
+
+// SeedAdminConfig creates the first account without a shell on the server,
+// which a host like Railway does not readily give. There is deliberately no
+// default password: a guessable one would be live on every fresh deploy.
+type SeedAdminConfig struct {
+	Email    string
+	Name     string
+	Password string
+}
+
+// Enabled reports whether an account should be seeded.
+func (s SeedAdminConfig) Enabled() bool { return s.Email != "" }
 
 type DBConfig struct {
 	Host         string
@@ -60,6 +76,8 @@ type DBConfig struct {
 	ConnLifetime time.Duration
 	// Enabled is false when the service runs without persistence.
 	Enabled bool
+	// AutoMigrate applies pending migrations at startup.
+	AutoMigrate bool
 }
 
 func (c Config) Addr() string { return c.Host + ":" + c.Port }
@@ -100,6 +118,11 @@ func Load() (Config, error) {
 		LoginRateLimit:    integer("LOGIN_RATE_LIMIT", 10),
 		LoginRateWindow:   duration("LOGIN_RATE_WINDOW", 15*time.Minute),
 		TrustedProxy:      boolean("TRUSTED_PROXY", true),
+		SeedAdmin: SeedAdminConfig{
+			Email:    env("SEED_ADMIN_EMAIL", ""),
+			Name:     env("SEED_ADMIN_NAME", "Admin"),
+			Password: env("SEED_ADMIN_PASSWORD", ""),
+		},
 		DB: DBConfig{
 			Host:         env("DB_HOST", "127.0.0.1"),
 			Port:         env("DB_PORT", "3306"),
@@ -110,6 +133,7 @@ func Load() (Config, error) {
 			MaxIdleConns: integer("DB_MAX_IDLE_CONNS", 5),
 			ConnLifetime: duration("DB_CONN_LIFETIME", 30*time.Minute),
 			Enabled:      boolean("DB_ENABLED", true),
+			AutoMigrate:  boolean("DB_AUTO_MIGRATE", true),
 		},
 	}
 
@@ -120,6 +144,12 @@ func Load() (Config, error) {
 		if cfg.DB.Password == "" {
 			return cfg, fmt.Errorf("config: DB_PASSWORD is required when DB_ENABLED is true")
 		}
+	}
+
+	// Half a seed is a mistake, not a choice: an address without a password
+	// would otherwise be skipped silently and leave the panel with no account.
+	if (cfg.SeedAdmin.Email == "") != (cfg.SeedAdmin.Password == "") {
+		return cfg, fmt.Errorf("config: SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set together")
 	}
 
 	if cfg.RateLimitRequests < 1 {

@@ -22,12 +22,9 @@ services:
       MYSQL_USER: ${DB_USER:?DB_USER is required}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
+      # The schema and seed content are applied by the API when it starts (see
+      # backend/internal/database/migrate.go), so MySQL starts empty here.
       - db_data:/var/lib/mysql
-      # Applied once, on an empty data directory only. Later schema changes are
-      # applied with scripts/migrate.sh — see docs/DEPLOYMENT.md.
-      - ./backend/migrations/0001_create_contact_messages.up.sql:/docker-entrypoint-initdb.d/0001_init.sql:ro
-      - ./backend/migrations/0002_cms_schema.up.sql:/docker-entrypoint-initdb.d/0002_cms.sql:ro
-      - ./backend/migrations/0003_seed_content.up.sql:/docker-entrypoint-initdb.d/0003_seed.sql:ro
     # The database is only reachable from the compose network. Uncomment to
     # inspect it from the host during development.
     # ports:
@@ -56,6 +53,10 @@ services:
       DB_NAME: ${DB_NAME:-portfolio}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      # First admin account, created only while there are none.
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Admin}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-5}
       RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-1h}
       LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-10}

@@ -8,7 +8,8 @@
 #
 # Override the choice with DB_BACKEND=docker|local.
 #
-# A Railway database is reached the same way, with its variables passed in:
+# A Railway database is reached the same way, with its variables passed in —
+# see db_from_railway for the address:
 #
 #   railway run --no-local --service MySQL ./scripts/migrate.sh status
 
@@ -16,7 +17,7 @@
 #
 #   1. the environment the script started with — `DB_HOST=… ./scripts/…`, or
 #      whatever `railway run` passed in;
-#   2. a Railway MySQL service's public address (MYSQL_PUBLIC_URL);
+#   2. a Railway MySQL service's own variables (MYSQL*, under `railway run`);
 #   3. the root .env (deployment);
 #   4. backend/.env (local development).
 #
@@ -30,7 +31,7 @@ db_load_env() {
   local file line key saved
   local preset=""
 
-  db_from_railway_url
+  db_from_railway
 
   # Remember every key the files would set that is already set, before either
   # file can replace it. Keys are shell identifiers, so a space-separated list
@@ -77,34 +78,52 @@ db_load_env() {
 }
 
 # `railway run --service MySQL` passes the database's own variables, whose names
-# are not ours. Its public URL is the one address that works from outside
-# Railway, so it is mapped onto DB_* — filling only what is not already set.
-db_from_railway_url() {
+# are not ours. They are mapped onto DB_*, filling only what the caller has not
+# set.
+#
+# The address depends on the service's public networking. With a TCP proxy on,
+# the public URL or proxy domain works from anywhere. With it off, the only
+# address is private to Railway, so open a tunnel and pass its address — the
+# credentials still come from the service:
+#
+#   railway connect MySQL --tunnel-only --port 3307        # in another terminal
+#   DB_HOST=127.0.0.1 DB_PORT=3307 \
+#     railway run --no-local --service MySQL ./scripts/migrate.sh status
+db_from_railway() {
+  # Neither under `railway run` nor given a Railway URL: nothing to map.
+  [[ -n "${RAILWAY_PROJECT_ID:-}${MYSQL_PUBLIC_URL:-}" ]] || return 0
+
   local url="${MYSQL_PUBLIC_URL:-}"
 
-  if [[ -z "$url" ]]; then
-    # Under `railway run` with no address at all, the scripts would fall through
-    # to backend/.env and act on the local database while looking like a
-    # Railway run.
-    if [[ -n "${RAILWAY_PROJECT_ID:-}" && -z "${DB_HOST:-}" ]]; then
-      echo "error: railway run passed no database address (no MYSQL_PUBLIC_URL or DB_HOST)." >&2
-      echo "       Use --service with your MySQL service's name, and check that its" >&2
-      echo "       public networking is on." >&2
+  if [[ -n "$url" ]]; then
+    if [[ ! "$url" =~ ^mysql://([^:/@]+):([^@]*)@([^:/]+):([0-9]+)/([^?]+) ]]; then
+      echo "error: MYSQL_PUBLIC_URL is not mysql://user:password@host:port/database" >&2
       exit 64
     fi
-    return 0
+    DB_USER="${DB_USER:-${BASH_REMATCH[1]}}"
+    DB_PASSWORD="${DB_PASSWORD:-${BASH_REMATCH[2]}}"
+    DB_HOST="${DB_HOST:-${BASH_REMATCH[3]}}"
+    DB_PORT="${DB_PORT:-${BASH_REMATCH[4]}}"
+    DB_NAME="${DB_NAME:-${BASH_REMATCH[5]}}"
+  else
+    DB_USER="${DB_USER:-${MYSQLUSER:-}}"
+    DB_PASSWORD="${DB_PASSWORD:-${MYSQLPASSWORD:-}}"
+    DB_NAME="${DB_NAME:-${MYSQLDATABASE:-}}"
+    DB_HOST="${DB_HOST:-${RAILWAY_TCP_PROXY_DOMAIN:-}}"
+    DB_PORT="${DB_PORT:-${RAILWAY_TCP_PROXY_PORT:-}}"
   fi
 
-  if [[ ! "$url" =~ ^mysql://([^:/@]+):([^@]*)@([^:/]+):([0-9]+)/([^?]+) ]]; then
-    echo "error: MYSQL_PUBLIC_URL is not mysql://user:password@host:port/database" >&2
+  # With no address here, the scripts would fall through to backend/.env and act
+  # on the local database while looking like a Railway run.
+  if [[ -z "$DB_HOST" ]]; then
+    echo "error: Railway passed no address this machine can reach — the database's" >&2
+    echo "       public networking is off. Open a tunnel in another terminal:" >&2
+    echo "         railway connect MySQL --tunnel-only --port 3307" >&2
+    echo "       then pass its address:" >&2
+    echo "         DB_HOST=127.0.0.1 DB_PORT=3307 railway run --no-local --service MySQL $0 …" >&2
     exit 64
   fi
 
-  DB_USER="${DB_USER:-${BASH_REMATCH[1]}}"
-  DB_PASSWORD="${DB_PASSWORD:-${BASH_REMATCH[2]}}"
-  DB_HOST="${DB_HOST:-${BASH_REMATCH[3]}}"
-  DB_PORT="${DB_PORT:-${BASH_REMATCH[4]}}"
-  DB_NAME="${DB_NAME:-${BASH_REMATCH[5]}}"
   # A remote server is reached with the mysql client here, never through a
   # Compose container that happens to be running.
   DB_BACKEND="${DB_BACKEND:-local}"
