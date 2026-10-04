@@ -25,6 +25,12 @@ type memoryStore struct {
 	key, contentType string
 	body             []byte
 	err              error
+	deleted          []string
+}
+
+func (m *memoryStore) Delete(_ context.Context, key string) error {
+	m.deleted = append(m.deleted, key)
+	return m.err
 }
 
 func (m *memoryStore) Put(_ context.Context, key, contentType string, body []byte) error {
@@ -159,5 +165,61 @@ func TestR2StoreSendsASignedPutWithTheRightHeaders(t *testing.T) {
 	}
 	if string(r.body) != string(samples["image/png"]) {
 		t.Error("the body arrived altered")
+	}
+}
+
+func TestKeyForRecognisesOnlyThisSitesUploads(t *testing.T) {
+	u := uploader(&memoryStore{}, 1<<20)
+	own := "projects/2026/10/0123456789abcdef0123456789abcdef.png"
+
+	if key, ok := u.KeyFor("https://cdn.example.com/" + own); !ok || key != own {
+		t.Errorf("our own upload: %q %v", key, ok)
+	}
+	for _, url := range []string{
+		"https://i.imgur.com/8HbEl4Q.png",                      // a pasted link
+		"/portrait.jpg",                                        // a file in public/
+		"https://cdn.example.com/products/1696-abc12345.jpg",   // another app's file in a shared bucket
+		"https://cdn.example.com/notes/2026/10/" + own[17:],    // not one of our folders
+		"https://cdn.example.com/projects/2026/10/../../x.png", // a path trick
+		"https://cdn.example.com/projects/2026/10/0123.png",    // not a key Upload makes
+		"https://cdn.example.com.evil.example/" + own,          // a lookalike host
+		"",
+	} {
+		if key, ok := u.KeyFor(url); ok {
+			t.Errorf("%q was taken for our upload %q", url, key)
+		}
+	}
+}
+
+func TestDeleteRefusesKeysThisSiteDidNotCreate(t *testing.T) {
+	store := &memoryStore{}
+	u := uploader(store, 1<<20)
+
+	if err := u.Delete(context.Background(), "products/1696-abc12345.jpg"); err == nil {
+		t.Error("another app's key was accepted")
+	}
+	if len(store.deleted) != 0 {
+		t.Errorf("the bucket was touched: %v", store.deleted)
+	}
+
+	own := "portraits/2026/10/0123456789abcdef0123456789abcdef.webp"
+	if err := u.Delete(context.Background(), own); err != nil || len(store.deleted) != 1 || store.deleted[0] != own {
+		t.Errorf("our own key: err %v, deleted %v", err, store.deleted)
+	}
+}
+
+func TestR2StoreSendsASignedDelete(t *testing.T) {
+	got := make(chan string, 1)
+	s3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- r.Method + " " + r.URL.Path + " " + strings.SplitN(r.Header.Get("Authorization"), " ", 2)[0]
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(s3.Close)
+
+	if err := NewR2Store(s3.URL, "key-id", "secret", "portfolio", nil).Delete(context.Background(), "projects/2026/10/x.png"); err != nil {
+		t.Fatal(err)
+	}
+	if r := <-got; r != "DELETE /portfolio/projects/2026/10/x.png AWS4-HMAC-SHA256" {
+		t.Errorf("request %q", r)
 	}
 }

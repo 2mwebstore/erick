@@ -150,8 +150,33 @@ Images from a link or from R2 are shown exactly as uploaded: `@nuxt/image` only
 resizes and converts files in `public/`. Upload WebP or AVIF at about the size
 it is shown (800 px wide is plenty for the portrait).
 
-Replacing an image does not delete the old file from the bucket. Remove unused
-files in the Cloudflare dashboard if you want the space back.
+### When uploaded files are deleted
+
+An uploaded file is deleted from the bucket once nothing shows it any more:
+
+- **A project is deleted:** its image goes with it.
+- **An image is replaced or cleared and saved:** the old file goes, for a
+  project image, the portrait or a profile logo.
+- **An upload is replaced or cleared before it was ever saved,** for example
+  when you upload twice in a row: the unsaved file goes at once.
+
+A file is only deleted when all of these are true. Otherwise it is kept:
+
+- **This site uploaded it.** Pasted links, files in `public/`, and anything put
+  in the bucket another way are never touched, including another app's files if
+  the bucket is shared.
+- **Nothing else uses it.** The same file can be the portrait and a project
+  image; it stays until neither uses it.
+- **The save succeeded.** A save that fails deletes nothing, and a bucket that
+  cannot be reached never fails a save; the file is just left behind.
+
+Every deletion is recorded in the audit log, with its reason.
+
+Two cases leave a file behind: an upload you never save (you upload, then leave
+the page), and files replaced before this feature existed. Remove those in the
+Cloudflare dashboard if you want the space back. On a custom domain, Cloudflare
+may keep serving a deleted file from its cache for a while to anyone who has the
+exact link; nothing on the site links to it any more.
 
 ### Setting up R2
 

@@ -24,6 +24,7 @@ type Dependencies struct {
 	AuditService   *services.AuditService
 	SEOAudit       *services.SEOAuditService
 	Uploader       *uploads.Uploader
+	ImageCleanup   *services.ImageCleanup
 	Messages       *repositories.ContactRepository
 	Version        string
 	RateLimiter    *middleware.RateLimiter
@@ -47,10 +48,10 @@ func New(deps Dependencies) http.Handler {
 	)
 	admin := handlers.NewAdminHandler(
 		deps.ContentService, deps.Messages, deps.AuthService,
-		deps.AuditService, deps.Logger, deps.Config.TrustedProxy,
+		deps.AuditService, deps.ImageCleanup, deps.Logger, deps.Config.TrustedProxy,
 	)
 	seo := handlers.NewSEOHandler(deps.SEOAudit, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
-	upload := handlers.NewUploadHandler(deps.Uploader, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
+	upload := handlers.NewUploadHandler(deps.Uploader, deps.ImageCleanup, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
 
 	// ── Public ───────────────────────────────────────────────────────────────
 
@@ -141,6 +142,7 @@ func New(deps Dependencies) http.Handler {
 		middleware.CSRF,
 	)
 	protect("GET /v1/admin/uploads", upload.Settings)
+	protect("POST /v1/admin/uploads/discard", upload.Discard)
 	mux.Handle("POST /v1/admin/uploads/image", uploadChain(http.HandlerFunc(upload.Image)))
 
 	// Read-only diagnostics, so editors get it too. It only ever crawls the

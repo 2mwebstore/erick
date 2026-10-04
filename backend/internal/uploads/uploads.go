@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -43,10 +44,16 @@ var Folders = map[string]bool{
 // Types lists what is accepted, for messages and the admin panel.
 var Types = []string{"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
 
-// Store puts one object in the bucket.
+// Store puts objects in the bucket and removes them.
 type Store interface {
 	Put(ctx context.Context, key, contentType string, body []byte) error
+	Delete(ctx context.Context, key string) error
 }
+
+// ownKey matches exactly the keys Upload creates. Only those can be deleted:
+// a file put in the bucket any other way — by hand, or by another app sharing
+// the bucket — never matches, so it can never be removed from here.
+var ownKey = regexp.MustCompile(`^(projects|portraits|profiles)/\d{4}/\d{2}/[0-9a-f]{32}\.(jpg|png|webp|gif|avif)$`)
 
 // Image is a stored upload.
 type Image struct {
@@ -116,6 +123,26 @@ func (u *Uploader) Upload(ctx context.Context, folder string, r io.Reader) (*Ima
 		ContentType: contentType,
 		Size:        len(data),
 	}, nil
+}
+
+// KeyFor returns the object key behind url when url is an image this uploader
+// stored, and false for anything else: a pasted link, a file in public/, or an
+// object in the bucket that Upload did not create.
+func (u *Uploader) KeyFor(url string) (string, bool) {
+	key, found := strings.CutPrefix(strings.TrimSpace(url), u.publicURL+"/")
+	if !found || !ownKey.MatchString(key) {
+		return "", false
+	}
+	return key, true
+}
+
+// Delete removes an image this uploader stored. A key that Upload would not
+// have created is refused without touching the bucket.
+func (u *Uploader) Delete(ctx context.Context, key string) error {
+	if !ownKey.MatchString(key) {
+		return fmt.Errorf("uploads: refusing to delete %q, which this site did not upload", key)
+	}
+	return u.store.Delete(ctx, key)
 }
 
 // Sniff names the image type from the file's first bytes, and the extension
@@ -189,6 +216,15 @@ func (s *R2Store) Put(ctx context.Context, key, contentType string, body []byte)
 		ContentLength: aws.Int64(int64(len(body))),
 		ContentType:   aws.String(contentType),
 		CacheControl:  aws.String("public, max-age=31536000, immutable"),
+	})
+	return err
+}
+
+// Delete removes key. Deleting a key that is already gone succeeds.
+func (s *R2Store) Delete(ctx context.Context, key string) error {
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
 	})
 	return err
 }

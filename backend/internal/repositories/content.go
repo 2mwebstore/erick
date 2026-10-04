@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kongchansila/portfolio/backend/internal/models"
@@ -211,6 +212,57 @@ func (r *ContentRepository) ProjectBySlug(ctx context.Context, slug string) (*mo
 		}
 	}
 	return nil, ErrNotFound
+}
+
+// ProjectImage is a project's image address as stored, read before a save or a
+// delete so the file it pointed at can be cleaned up afterwards.
+func (r *ContentRepository) ProjectImage(ctx context.Context, id int64) (string, error) {
+	var image string
+	err := r.db.QueryRowContext(ctx, `SELECT COALESCE(image, '') FROM projects WHERE id = ?`, id).Scan(&image)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("repositories: project image: %w", err)
+	}
+	return image, nil
+}
+
+// ImageInUse reports whether anything still shows the image at url: a
+// project, the portrait, or a profile logo — every place an image address is
+// stored. Images are not translatable, so translations need no check.
+func (r *ContentRepository) ImageInUse(ctx context.Context, url string) (bool, error) {
+	var projects int
+	// TRIM covers rows saved before image addresses were trimmed on save.
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM projects WHERE TRIM(image) = ?`, url).Scan(&projects); err != nil {
+		return false, fmt.Errorf("repositories: image in projects: %w", err)
+	}
+	if projects > 0 {
+		return true, nil
+	}
+
+	settings, err := r.Settings(ctx)
+	if err != nil {
+		return false, err
+	}
+	if strings.TrimSpace(settings["portrait"]) == url {
+		return true, nil
+	}
+	if raw := settings["profiles"]; raw != "" {
+		var profiles []struct {
+			Image string `json:"image"`
+		}
+		// Unreadable profiles count as using the image: when in doubt, keep it.
+		if err := json.Unmarshal([]byte(raw), &profiles); err != nil {
+			return true, nil
+		}
+		for _, p := range profiles {
+			if strings.TrimSpace(p.Image) == url {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func (r *ContentRepository) Settings(ctx context.Context) (map[string]string, error) {

@@ -16,6 +16,8 @@ import (
 
 type memStore struct{ puts int }
 
+func (m *memStore) Delete(context.Context, string) error { return nil }
+
 func (m *memStore) Put(context.Context, string, string, []byte) error {
 	m.puts++
 	return nil
@@ -49,7 +51,7 @@ func uploadHandler(store uploads.Store, max int64) *handlers.UploadHandler {
 	if store != nil {
 		u = uploads.NewUploader(store, "https://cdn.example.com", max)
 	}
-	return handlers.NewUploadHandler(u, nil, quietLog(), false)
+	return handlers.NewUploadHandler(u, nil, nil, quietLog(), false)
 }
 
 func decodeBody(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {

@@ -90,7 +90,7 @@ useHead({ title: 'Projects' })
       :error="error"
       base-path="/admin/projects"
       label="projects"
-      delete-note="The project and its case study are removed from the site. This cannot be undone."
+      delete-note="The project and its case study are removed from the site, and an image you uploaded for it is deleted from storage unless something else uses it. This cannot be undone."
       @move="move"
       @remove="remove"
     >

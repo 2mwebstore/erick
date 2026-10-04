@@ -54,9 +54,34 @@ const accept = computed(() => (uploads.value.types ?? []).join(','))
 
 const hint = computed(() =>
   uploads.value.enabled
-    ? `Upload a JPEG, PNG, WebP, GIF or AVIF image up to ${maxLabel.value} — it is stored in R2 — or paste an image link.`
+    ? `Upload a JPEG, PNG, WebP, GIF or AVIF image up to ${maxLabel.value} — it is stored in R2 — or paste an image link. ` +
+      'When you save, an uploaded image you replaced or cleared is deleted from R2, unless something else uses it.'
     : 'Paste an image link, or a path to a file in public/ such as /portrait.jpg.',
 )
+
+/**
+ * The last file uploaded through this field, until something replaces it.
+ *
+ * Saving the form releases whatever image it replaced, but a file uploaded and
+ * then replaced or cleared before any save was never saved anywhere, so no
+ * save would release it. This field releases it itself. The API deletes only a
+ * file nothing uses, so if it was saved in the meantime it is kept.
+ */
+const lastUpload = ref('')
+
+function discard(url: string) {
+  if (!url) return
+  // Fire and forget: a file left behind costs storage, not correctness.
+  api('/api/admin/uploads/discard', { method: 'POST', body: { url } }).catch(() => {})
+}
+
+function clear() {
+  if (value.value && value.value === lastUpload.value) {
+    discard(lastUpload.value)
+    lastUpload.value = ''
+  }
+  value.value = ''
+}
 
 const shownError = computed(() => props.error || uploadError.value)
 
@@ -88,6 +113,8 @@ async function upload(event: Event) {
   uploading.value = true
   try {
     const res = await api<{ url: string }>('/api/admin/uploads/image', { method: 'POST', body: form })
+    if (lastUpload.value && props.modelValue === lastUpload.value) discard(lastUpload.value)
+    lastUpload.value = res.url
     emit('update:modelValue', res.url)
   } catch (e) {
     const err = e as ApiError
@@ -169,7 +196,7 @@ async function upload(event: Event) {
             variant="ghost"
             size="sm"
             :aria-label="`Clear ${label}`"
-            @click="value = ''"
+            @click="clear"
           >
             <Icon name="lucide:x" class="size-3.5" aria-hidden="true" />
           </UiButton>

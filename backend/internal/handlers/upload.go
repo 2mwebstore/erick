@@ -17,13 +17,31 @@ import (
 // UploadHandler stores images for the admin panel's image fields.
 type UploadHandler struct {
 	uploader     *uploads.Uploader // nil when R2 is not configured
+	images       *services.ImageCleanup
 	auditLog     *services.AuditService
 	log          *slog.Logger
 	trustedProxy bool
 }
 
-func NewUploadHandler(uploader *uploads.Uploader, auditLog *services.AuditService, log *slog.Logger, trustedProxy bool) *UploadHandler {
-	return &UploadHandler{uploader: uploader, auditLog: auditLog, log: log, trustedProxy: trustedProxy}
+func NewUploadHandler(uploader *uploads.Uploader, images *services.ImageCleanup, auditLog *services.AuditService, log *slog.Logger, trustedProxy bool) *UploadHandler {
+	return &UploadHandler{uploader: uploader, images: images, auditLog: auditLog, log: log, trustedProxy: trustedProxy}
+}
+
+// Discard handles POST /v1/admin/uploads/discard with {"url": "…"}: an upload
+// replaced or cleared before it was ever saved, which no save would otherwise
+// release. The usual rules hold — only a file this site uploaded, and only when
+// nothing uses it — so naming a file that is saved somewhere deletes nothing.
+func (h *UploadHandler) Discard(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		URL string `json:"url"`
+	}
+	if err := decode(r, &body); err != nil {
+		writeJSON(w, h.log, http.StatusBadRequest, Response{Message: decodeMessage(err)})
+		return
+	}
+	h.images.Release(middleware.UserFrom(r.Context()), middleware.ClientIP(r, h.trustedProxy),
+		"upload discarded before saving", body.URL)
+	writeJSON(w, h.log, http.StatusAccepted, Response{OK: true, Message: "Discarded."})
 }
 
 type uploadSettings struct {

@@ -146,16 +146,22 @@ func run() error {
 		log.Info("R2 is not configured — image fields take links only")
 	}
 
+	contentService := services.NewContentService(contentRepo, translationRepo)
+	// Deletes an uploaded image from the bucket once nothing shows it. Off
+	// (nil) when uploads are.
+	imageCleanup := services.NewImageCleanup(uploader, contentService, audit, log)
+
 	handler := routes.New(routes.Dependencies{
 		Config:         cfg,
 		Logger:         log,
 		DB:             db,
 		ContactService: services.NewContactService(contactRepo),
-		ContentService: services.NewContentService(contentRepo, translationRepo),
+		ContentService: contentService,
 		AuthService:    authService,
 		AuditService:   audit,
 		SEOAudit:       services.NewSEOAuditService(auditor, log),
 		Uploader:       uploader,
+		ImageCleanup:   imageCleanup,
 		Messages:       messages,
 		Version:        version,
 		RateLimiter:    limiter,
@@ -194,6 +200,9 @@ func run() error {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		return err
 	}
+	// Let image deletions started by the last requests finish (each is bounded
+	// to 30 seconds), rather than cutting one off halfway.
+	imageCleanup.Wait()
 
 	log.Info("stopped cleanly")
 	return nil

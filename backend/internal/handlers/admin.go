@@ -25,6 +25,7 @@ type AdminHandler struct {
 	messages   *repositories.ContactRepository
 	auth       *services.AuthService
 	audit      *services.AuditService
+	images     *services.ImageCleanup // nil when uploads are off
 	log        *slog.Logger
 	trustProxy bool
 }
@@ -34,13 +35,28 @@ func NewAdminHandler(
 	messages *repositories.ContactRepository,
 	auth *services.AuthService,
 	audit *services.AuditService,
+	images *services.ImageCleanup,
 	log *slog.Logger,
 	trustProxy bool,
 ) *AdminHandler {
 	return &AdminHandler{
 		content: content, messages: messages, auth: auth,
-		audit: audit, log: log, trustProxy: trustProxy,
+		audit: audit, images: images, log: log, trustProxy: trustProxy,
 	}
+}
+
+// previousProjectImage is project id's image before a change, so the file can
+// be cleaned up once the change has saved. Unknown ("" on any error) means
+// nothing is cleaned up, which is the safe direction.
+func (h *AdminHandler) previousProjectImage(r *http.Request, id int64) string {
+	if h.images == nil || id == 0 {
+		return ""
+	}
+	image, err := h.content.ProjectImage(r.Context(), id)
+	if err != nil {
+		return ""
+	}
+	return image
 }
 
 func (h *AdminHandler) ip(r *http.Request) string {
@@ -195,12 +211,19 @@ func (h *AdminHandler) SaveProject(w http.ResponseWriter, r *http.Request) {
 		project.ID = 0
 	}
 
+	previousImage := h.previousProjectImage(r, project.ID)
+
 	id, err := h.content.SaveProject(r.Context(), &project)
 	if err != nil {
 		h.fail(w, r, err, "saving project")
 		return
 	}
 	project.ID = id
+
+	// The image was replaced or cleared: the old file goes, if nothing else uses it.
+	if previousImage != "" && previousImage != project.Image {
+		h.images.Release(middleware.UserFrom(r.Context()), h.ip(r), "project image replaced", previousImage)
+	}
 
 	action := "update"
 	status := http.StatusOK
@@ -222,6 +245,8 @@ func (h *AdminHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	previousImage := h.previousProjectImage(r, id)
+
 	if err := h.content.DeleteProject(r.Context(), id); err != nil {
 		h.fail(w, r, err, "deleting project")
 		return
@@ -229,6 +254,7 @@ func (h *AdminHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	h.audit.Record(r.Context(), middleware.UserFrom(r.Context()), "delete", "project",
 		strconv.FormatInt(id, 10), nil, h.ip(r))
+	h.images.Release(middleware.UserFrom(r.Context()), h.ip(r), "project deleted", previousImage)
 
 	writeJSON(w, h.log, http.StatusOK, Response{OK: true, Message: "Project deleted."})
 }
@@ -333,9 +359,19 @@ func (h *AdminHandler) SaveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read before the save, so a portrait or logo it replaces can be cleaned up.
+	var previous map[string]string
+	if h.images != nil {
+		previous, _ = h.content.RawSettings(r.Context())
+	}
+
 	if err := h.content.SaveSettings(r.Context(), body.Settings); err != nil {
 		h.fail(w, r, err, "saving settings")
 		return
+	}
+	if previous != nil {
+		h.images.Release(middleware.UserFrom(r.Context()), h.ip(r), "settings image replaced",
+			services.RemovedSettingImages(previous, body.Settings)...)
 	}
 	if err := h.content.SaveSettingTranslations(r.Context(), body.Translations); err != nil {
 		h.fail(w, r, err, "saving setting translations")

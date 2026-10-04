@@ -277,6 +277,7 @@ func TestAdminRoutesAreUnreachableWithoutASession(t *testing.T) {
 		{http.MethodGet, "/v1/admin/seo/audit"},
 		{http.MethodGet, "/v1/admin/uploads"},
 		{http.MethodPost, "/v1/admin/uploads/image"},
+		{http.MethodPost, "/v1/admin/uploads/discard"},
 		{http.MethodPost, "/v1/admin/seo/audit"},
 		{http.MethodGet, "/v1/auth/session"},
 		{http.MethodPost, "/v1/auth/logout"},

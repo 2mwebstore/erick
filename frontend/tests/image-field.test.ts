@@ -114,3 +114,76 @@ describe('image field', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 })
+
+describe('image field cleanup of unsaved uploads', () => {
+  type Call = { url: string; method?: string; body?: unknown }
+
+  // Answers each upload with the next URL, and records every call.
+  function stubFetch(urls: string[]) {
+    const calls: Call[] = []
+    const original = globalThis.$fetch
+    globalThis.$fetch = Object.assign(
+      async (url: string, options: { method?: string; body?: unknown } = {}) => {
+        calls.push({ url, method: options.method, body: options.body })
+        if (url === '/api/admin/uploads/image') return { ok: true, url: urls.shift() }
+        return { ok: true }
+      },
+      original,
+    ) as typeof $fetch
+    return { calls, restore: () => (globalThis.$fetch = original) }
+  }
+
+  const png = () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'shot.png', { type: 'image/png' })
+  const discards = (calls: Call[]) =>
+    calls.filter((c) => c.url === '/api/admin/uploads/discard').map((c) => (c.body as { url: string }).url)
+
+  it('discards the first upload when a second replaces it before saving', async () => {
+    uploadsOn(true)
+    const { calls, restore } = stubFetch(['https://cdn.example.com/a.png', 'https://cdn.example.com/b.png'])
+    try {
+      const wrapper = await mount()
+      await choose(wrapper, png())
+      await wrapper.setProps({ modelValue: 'https://cdn.example.com/a.png' }) // the parent applies v-model
+      await choose(wrapper, png())
+
+      expect(discards(calls)).toEqual(['https://cdn.example.com/a.png'])
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['https://cdn.example.com/b.png'])
+    } finally {
+      restore()
+    }
+  })
+
+  it('discards an unsaved upload when the field is cleared', async () => {
+    uploadsOn(true)
+    const { calls, restore } = stubFetch(['https://cdn.example.com/a.png'])
+    try {
+      const wrapper = await mount()
+      await choose(wrapper, png())
+      await wrapper.setProps({ modelValue: 'https://cdn.example.com/a.png' })
+      await wrapper.find('button[aria-label="Clear Image"]').trigger('click')
+      await settle()
+
+      expect(discards(calls)).toEqual(['https://cdn.example.com/a.png'])
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    } finally {
+      restore()
+    }
+  })
+
+  // A saved image is released by the save itself, after it succeeds, not when
+  // the field is cleared — the edit may yet be abandoned.
+  it('leaves an already-saved image alone when the field is cleared', async () => {
+    uploadsOn(true)
+    const { calls, restore } = stubFetch([])
+    try {
+      const wrapper = await mount('https://cdn.example.com/saved.png')
+      await wrapper.find('button[aria-label="Clear Image"]').trigger('click')
+      await settle()
+
+      expect(discards(calls)).toEqual([])
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    } finally {
+      restore()
+    }
+  })
+})

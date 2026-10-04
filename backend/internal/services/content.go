@@ -175,7 +175,10 @@ func (s *ContentService) SaveProject(ctx context.Context, p *models.Project) (in
 	requireText(fields, "category", p.Category, 1, categoryMax)
 	limitText(fields, "description", p.Description, longTextMax)
 	limitText(fields, "summary", p.Summary, longTextMax)
-	checkImage(fields, "image", strings.TrimSpace(p.Image))
+	// Stored trimmed: the check that decides whether an uploaded file is still
+	// in use compares addresses exactly.
+	p.Image = strings.TrimSpace(p.Image)
+	checkImage(fields, "image", p.Image)
 	limitText(fields, "imageAlt", p.ImageAlt, 255)
 
 	// A half-written URL is worse than none, so reject anything that is not
@@ -288,6 +291,31 @@ func cleanList(fields map[string]string, name string, items []string) []string {
 		fields[name] = fmt.Sprintf("Limit to %d entries.", maxListEntries)
 	}
 	return cleaned
+}
+
+// ProjectImage is project id's stored image address, "" for none.
+func (s *ContentService) ProjectImage(ctx context.Context, id int64) (string, error) {
+	if s.repo == nil {
+		return "", ErrContentUnavailable
+	}
+	return s.repo.ProjectImage(ctx, id)
+}
+
+// RawSettings are the stored settings, untranslated.
+func (s *ContentService) RawSettings(ctx context.Context) (map[string]string, error) {
+	if s.repo == nil {
+		return nil, ErrContentUnavailable
+	}
+	return s.repo.Settings(ctx)
+}
+
+// ImageInUse reports whether a project, the portrait or a profile logo still
+// shows the image at url.
+func (s *ContentService) ImageInUse(ctx context.Context, url string) (bool, error) {
+	if s.repo == nil {
+		return false, ErrContentUnavailable
+	}
+	return s.repo.ImageInUse(ctx, url)
 }
 
 func (s *ContentService) DeleteProject(ctx context.Context, id int64) error {
