@@ -22,6 +22,7 @@ import (
 	"github.com/kongchansila/portfolio/backend/internal/models"
 	"github.com/kongchansila/portfolio/backend/internal/repositories"
 	"github.com/kongchansila/portfolio/backend/internal/routes"
+	"github.com/kongchansila/portfolio/backend/internal/seoaudit"
 	"github.com/kongchansila/portfolio/backend/internal/services"
 )
 
@@ -119,6 +120,16 @@ func run() error {
 		contactRepo = messages
 	}
 
+	// The SEO audit crawls the public site; without its address it stays off.
+	var auditor *seoaudit.Auditor
+	if cfg.SiteURL != "" {
+		if auditor, err = seoaudit.New(cfg.SiteURL, nil); err != nil {
+			return err
+		}
+	} else {
+		log.Warn("SITE_URL is not set — the SEO audit in the admin panel is off")
+	}
+
 	handler := routes.New(routes.Dependencies{
 		Config:         cfg,
 		Logger:         log,
@@ -127,6 +138,7 @@ func run() error {
 		ContentService: services.NewContentService(contentRepo, translationRepo),
 		AuthService:    authService,
 		AuditService:   audit,
+		SEOAudit:       services.NewSEOAuditService(auditor, log),
 		Messages:       messages,
 		Version:        version,
 		RateLimiter:    limiter,

@@ -256,3 +256,54 @@ export interface AuditEntry {
   ip_address?: string
   created_at: string
 }
+
+/** One finding of the SEO check (backend/internal/seoaudit). */
+export interface SeoCheck {
+  id: string
+  group: 'sitelinks' | 'technical' | 'onpage'
+  title: string
+  status: 'pass' | 'warn' | 'fail'
+  detail: string
+  urls?: string[]
+}
+
+/** What the SEO check's crawl learned about one URL. */
+export interface SeoPage {
+  url: string
+  status: number
+  error?: string
+  redirectTo?: string
+  /** Clicks from the home page; -1 when no link leads here. */
+  depth: number
+  inSitemap: boolean
+  indexable: boolean
+  title: string
+  description: string
+  canonical: string
+  h1: number
+  imagesWithoutAlt: number
+  structuredData: string[]
+  hreflang?: Record<string, string>
+  incoming: number
+  outgoing: number
+}
+
+export interface SeoReport {
+  origin: string
+  startedAt: string
+  durationMs: number
+  /** This site's own diagnostic, 0–100 — not anything Google reports. */
+  score: number
+  sitelinksScore: number
+  truncated: boolean
+  checks: SeoCheck[]
+  pages: SeoPage[]
+}
+
+export interface SeoAuditStatus {
+  configured: boolean
+  origin?: string
+  running: boolean
+  error?: string
+  report?: SeoReport
+}

@@ -13,6 +13,8 @@ const nav = computed(() => {
     { label: 'Principles', to: '/admin/principles', icon: 'lucide:compass' },
     { label: 'Messages', to: '/admin/messages', icon: 'lucide:inbox' },
     { label: 'Settings', to: '/admin/settings', icon: 'lucide:settings' },
+    // Read-only diagnostics, so every role gets it.
+    { label: 'SEO check', to: '/admin/seo', icon: 'lucide:search-check' },
     // Your own account, so every role gets it.
     { label: 'Your account', to: '/admin/account', icon: 'lucide:user-round' },
   ]

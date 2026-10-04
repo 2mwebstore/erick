@@ -53,6 +53,8 @@ services:
       DB_NAME: ${DB_NAME:-portfolio}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      # The site the admin panel's SEO check crawls.
+      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
       # First admin account, created only while there are none.
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
       SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Admin}

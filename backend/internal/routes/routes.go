@@ -21,6 +21,7 @@ type Dependencies struct {
 	ContentService *services.ContentService
 	AuthService    *services.AuthService
 	AuditService   *services.AuditService
+	SEOAudit       *services.SEOAuditService
 	Messages       *repositories.ContactRepository
 	Version        string
 	RateLimiter    *middleware.RateLimiter
@@ -46,6 +47,7 @@ func New(deps Dependencies) http.Handler {
 		deps.ContentService, deps.Messages, deps.AuthService,
 		deps.AuditService, deps.Logger, deps.Config.TrustedProxy,
 	)
+	seo := handlers.NewSEOHandler(deps.SEOAudit, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
 
 	// ── Public ───────────────────────────────────────────────────────────────
 
@@ -127,6 +129,11 @@ func New(deps Dependencies) http.Handler {
 	protect("DELETE /v1/admin/pillars/{id}", admin.DeletePillar)
 
 	protect("PUT /v1/admin/settings", admin.SaveSettings)
+
+	// Read-only diagnostics, so editors get it too. It only ever crawls the
+	// configured site, and one run at a time.
+	protect("GET /v1/admin/seo/audit", seo.Status)
+	protect("POST /v1/admin/seo/audit", seo.Run)
 
 	protect("GET /v1/admin/messages", admin.Messages)
 	protect("GET /v1/admin/messages/export", admin.ExportMessages)

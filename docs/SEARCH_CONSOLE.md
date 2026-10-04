@@ -65,6 +65,32 @@ Draft (unpublished) projects are never listed.
   canonical tag* for a `/km` URL, the page is being served by an old deploy.
 - `/admin` is never listed and sends `noindex`. Missing pages answer `404`.
 
+## Check the site yourself
+
+Search Console reports what Google has already seen, days later. To check the
+site now, open **/admin → SEO check** and click **Run check**. It crawls the
+public site the way a search engine does: robots.txt, the sitemap, and every
+page that can be reached by following links from the home page. It takes a few
+seconds, and then reports:
+
+- **Sitelinks readiness:** whether the navigation is crawlable and leads to
+  real pages, whether any sitemap page has no link leading to it, how many
+  clicks each page is from the home page, which pages have only one link in, and
+  whether project pages carry breadcrumbs.
+- **Technical:** HTTPS, robots.txt, the sitemap, broken links, links that go
+  through a redirect, canonicals and hreflang.
+- **On the page:** titles, descriptions, headings, structured data and image
+  alt text.
+
+The scores are the site's own diagnostic, not anything Google reports. Google
+alone decides whether to show sitelinks. The check shows whether anything stands
+in the way.
+
+It only ever crawls the address in `SITE_URL` on the API (or
+`NUXT_PUBLIC_SITE_URL` when that is set instead), one run at a time, and each
+run is recorded in the audit log. The latest result is kept in memory, so a
+restart clears it.
+
 ## Things you do not need to do
 
 - **Resubmit after editing content.** Google re-reads the sitemap on its own,

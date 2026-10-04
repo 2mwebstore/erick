@@ -7,6 +7,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -51,6 +52,10 @@ type Config struct {
 	// SeedAdmin is the first admin account, created at startup only while the
 	// database has no accounts at all.
 	SeedAdmin SeedAdminConfig
+
+	// SiteURL is the public site's origin, the one address the SEO audit
+	// crawls. Empty turns the audit off.
+	SiteURL string
 }
 
 // SeedAdminConfig creates the first account without a shell on the server,
@@ -123,6 +128,9 @@ func Load() (Config, error) {
 			Name:     env("SEED_ADMIN_NAME", "Admin"),
 			Password: env("SEED_ADMIN_PASSWORD", ""),
 		},
+		// The frontend's variable is accepted too: on a host where both services
+		// share variables, the site address is then set in one place only.
+		SiteURL: env("SITE_URL", env("NUXT_PUBLIC_SITE_URL", "")),
 		DB: DBConfig{
 			Host:         env("DB_HOST", "127.0.0.1"),
 			Port:         env("DB_PORT", "3306"),
@@ -150,6 +158,13 @@ func Load() (Config, error) {
 	// would otherwise be skipped silently and leave the panel with no account.
 	if (cfg.SeedAdmin.Email == "") != (cfg.SeedAdmin.Password == "") {
 		return cfg, fmt.Errorf("config: SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set together")
+	}
+
+	if cfg.SiteURL != "" {
+		u, err := url.Parse(cfg.SiteURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return cfg, fmt.Errorf("config: SITE_URL must be an absolute http(s) URL, such as https://example.com")
+		}
 	}
 
 	if cfg.RateLimitRequests < 1 {
