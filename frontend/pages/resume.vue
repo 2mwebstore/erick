@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const sectionLink = useSectionLink()
 const {
   site,
   capabilities,
@@ -163,7 +164,7 @@ function print() {
       </ul>
 
       <div class="mt-8 print:hidden">
-        <UiButton to="/#contact" variant="secondary" size="sm">
+        <UiButton :to="sectionLink('contact')" variant="secondary" size="sm">
           Start a conversation
           <Icon name="lucide:arrow-right" class="size-3.5" aria-hidden="true" />
         </UiButton>

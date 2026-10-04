@@ -7,7 +7,7 @@ const localePath = useLocalePath()
 
 /** Anchors hang off whichever language's home page is current. */
 const home = computed(() => localePath('/'))
-const anchor = (hash: string) => `${home.value === '/' ? '' : home.value}/#${hash}`
+const anchor = useSectionLink()
 
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
@@ -40,7 +40,7 @@ onMounted(() => {
   // panel while leaving the scroll lock on `<html>` in place, so the page could
   // not be scrolled and nothing on screen explained why.
   //
-  // 1024px, matching `lg:` in the template: six navigation items, the language
+  // 1024px, matching `lg:` in the template: five navigation items, the language
   // switcher, the theme button and two calls to action do not fit in 768, and
   // what fell off the right-hand edge there was the Resume button.
   const wide = window.matchMedia('(min-width: 1024px)')

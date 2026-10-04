@@ -2,9 +2,7 @@
 const { site, pillars } = useSiteContent()
 
 const { t } = useI18n()
-const localePath = useLocalePath()
-const home = computed(() => localePath('/'))
-const anchor = (hash: string) => `${home.value === '/' ? '' : home.value}/#${hash}`
+const anchor = useSectionLink()
 </script>
 
 <template>

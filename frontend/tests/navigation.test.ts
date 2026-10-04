@@ -19,7 +19,6 @@ describe('primary navigation (§9)', () => {
 
   it('lists the homepage sections in the order they appear', () => {
     expect(navItems.map((i) => i.key)).toEqual([
-      'about',
       'experience',
       'work',
       'capabilities',
@@ -30,12 +29,16 @@ describe('primary navigation (§9)', () => {
 
   /**
    * The scroll spy observes exactly `navItems`, so a homepage section carrying
-   * an id but missing from the nav is a stretch of page it cannot see — and
-   * because the old spy only ever assigned a non-empty value, the highlight
-   * stuck on whatever was lit when that stretch was entered. That is precisely
-   * what adding the Experience section did.
+   * an id but missing from the nav is a stretch of page it cannot see. The old
+   * spy only ever assigned a non-empty value, so the highlight stuck on whatever
+   * was lit when that stretch was entered — which is what adding the Experience
+   * section did. The current spy clears it instead, so a section can be left out
+   * of the nav on purpose; it just has to be named here, so that a new section
+   * is never left out by accident.
    */
-  it('has a nav item for every homepage section that anchors one', () => {
+  const LEFT_OUT_OF_NAV = ['about']
+
+  it('has a nav item for every homepage section that anchors one, bar those left out on purpose', () => {
     const dir = resolve(process.cwd(), 'components/sections')
     const anchored = readdirSync(dir)
       .filter((file) => file.endsWith('.vue'))
@@ -48,13 +51,36 @@ describe('primary navigation (§9)', () => {
       })
       .sort()
 
-    expect(anchored).toEqual(navItems.map((i) => i.section).sort())
+    expect(anchored).toEqual([...navItems.map((i) => i.section), ...LEFT_OUT_OF_NAV].sort())
   })
 
   it('points every item at an anchor that a homepage section actually renders', () => {
     for (const item of navItems) {
       expect(item.hash).toBe(item.section)
     }
+  })
+
+  /**
+   * Section links go through useSectionLink. Built by hand they came out as
+   * /km/#work, which costs a 301 on a full page load, or as a hard-coded
+   * /#contact, which sent a reader on a Khmer page to the English home page.
+   */
+  it('builds every homepage section link through useSectionLink', () => {
+    const offenders: string[] = []
+    const scan = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = resolve(dir, entry.name)
+        if (entry.isDirectory()) scan(path)
+        else if (entry.name.endsWith('.vue')) {
+          const source = readFileSync(path, 'utf8')
+          if (/\bto="\/#|\}\/#\$\{/.test(source)) offenders.push(path.replace(process.cwd(), ''))
+        }
+      }
+    }
+    scan(resolve(process.cwd(), 'components'))
+    scan(resolve(process.cwd(), 'pages'))
+
+    expect(offenders).toEqual([])
   })
 
   it('carries no labels of its own, so every language reads the same structure', () => {
