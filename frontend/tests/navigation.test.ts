@@ -61,24 +61,34 @@ describe('primary navigation (§9)', () => {
   })
 
   /**
-   * Section links go through useSectionLink. Built by hand they came out as
-   * /km/#work, which costs a 301 on a full page load, or as a hard-coded
-   * /#contact, which sent a reader on a Khmer page to the English home page.
+   * Public links go through localePath, or useSectionLink for a homepage
+   * section. Written by hand they pointed at English from every Khmer page —
+   * project cards, "All work", the error page — so a Khmer reader who clicked
+   * was switched language, and the Khmer project pages were linked from nothing
+   * but the language switcher. Section links built by hand came out as
+   * /km/#work, which costs a 301 on a full page load.
+   *
+   * The admin panel is English-only and is left out.
    */
-  it('builds every homepage section link through useSectionLink', () => {
+  it('builds every public internal link in the reader\'s language', () => {
+    const handWritten = /\bto="\/|:to="[`']\/|\}\/#\$\{/
     const offenders: string[] = []
-    const scan = (dir: string) => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const path = resolve(dir, entry.name)
-        if (entry.isDirectory()) scan(path)
-        else if (entry.name.endsWith('.vue')) {
-          const source = readFileSync(path, 'utf8')
-          if (/\bto="\/#|\}\/#\$\{/.test(source)) offenders.push(path.replace(process.cwd(), ''))
+    const scan = (path: string) => {
+      for (const entry of readdirSync(path, { withFileTypes: true })) {
+        const child = resolve(path, entry.name)
+        // pages/admin/, components/admin/ and layouts/admin.vue
+        if (entry.name === 'admin' || entry.name === 'admin.vue') continue
+        if (entry.isDirectory()) {
+          scan(child)
+        } else if (entry.name.endsWith('.vue') && handWritten.test(readFileSync(child, 'utf8'))) {
+          offenders.push(child.replace(process.cwd(), ''))
         }
       }
     }
-    scan(resolve(process.cwd(), 'components'))
-    scan(resolve(process.cwd(), 'pages'))
+    for (const dir of ['components', 'pages', 'layouts']) scan(resolve(process.cwd(), dir))
+    for (const file of ['app.vue', 'error.vue']) {
+      if (handWritten.test(readFileSync(resolve(process.cwd(), file), 'utf8'))) offenders.push(`/${file}`)
+    }
 
     expect(offenders).toEqual([])
   })

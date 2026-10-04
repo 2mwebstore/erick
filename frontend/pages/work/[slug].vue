@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const localePath = useLocalePath()
 const route = useRoute()
 const { projects } = useSiteContent()
 
@@ -40,7 +41,7 @@ useProjectSchema(project)
     <header class="mx-auto max-w-6xl px-6 pt-12 pb-10 sm:pt-16 lg:px-8">
       <nav :aria-label="t('work.breadcrumb')">
         <NuxtLink
-          to="/work"
+          :to="localePath('/work')"
           class="inline-flex items-center gap-1.5 font-mono text-[0.6875rem] tracking-[0.14em] text-fg-subtle uppercase transition-colors hover:text-accent"
         >
           <Icon name="lucide:arrow-left" class="size-3.5" aria-hidden="true" />
@@ -135,7 +136,7 @@ useProjectSchema(project)
     <!-- Next -->
     <div class="hairline">
       <div class="mx-auto max-w-6xl px-6 py-12 lg:px-8">
-        <NuxtLink :to="`/work/${next.slug}`" class="group flex items-center justify-between gap-6">
+        <NuxtLink :to="localePath(`/work/${next.slug}`)" class="group flex items-center justify-between gap-6">
           <span>
             <span class="eyebrow">{{ t('actions.nextProject') }}</span>
             <span

@@ -2,6 +2,8 @@
 import type { NuxtError } from '#app'
 
 const { t } = useI18n()
+const localePath = useLocalePath()
+const sectionLink = useSectionLink()
 
 const props = defineProps<{ error: NuxtError }>()
 
@@ -30,9 +32,9 @@ useSeoMeta({ robots: 'noindex, follow' })
         </p>
 
         <div class="mt-9 flex flex-wrap gap-3">
-          <UiButton to="/">{{ t('actions.backToHome') }}</UiButton>
-          <UiButton to="/work" variant="secondary">{{ t('actions.viewWork') }}</UiButton>
-          <UiButton to="/#contact" variant="ghost">{{ t('nav.contact') }}</UiButton>
+          <UiButton :to="localePath('/')">{{ t('actions.backToHome') }}</UiButton>
+          <UiButton :to="localePath('/work')" variant="secondary">{{ t('actions.viewWork') }}</UiButton>
+          <UiButton :to="sectionLink('contact')" variant="ghost">{{ t('nav.contact') }}</UiButton>
         </div>
       </div>
     </main>

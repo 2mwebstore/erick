@@ -19,6 +19,10 @@ const props = withDefaults(
 
 const reversed = computed(() => props.index % 2 === 1)
 const hasLinks = computed(() => Boolean(props.project.liveUrl || props.project.githubUrl))
+
+// In the reader's language: a card on /km links to /km/work/…, not the English page.
+const localePath = useLocalePath()
+const caseStudy = computed(() => localePath(`/work/${props.project.slug}`))
 </script>
 
 <template>
@@ -31,7 +35,7 @@ const hasLinks = computed(() => Boolean(props.project.liveUrl || props.project.g
     <div class="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-14">
       <!-- Visual -->
       <NuxtLink
-        :to="`/work/${project.slug}`"
+        :to="caseStudy"
         class="block lg:col-span-7"
         :class="reversed ? 'lg:order-2' : ''"
         :aria-label="`View the ${project.title} case study`"
@@ -58,7 +62,7 @@ const hasLinks = computed(() => Boolean(props.project.liveUrl || props.project.g
           class="mt-3 text-2xl font-semibold tracking-tight text-fg sm:text-[1.75rem]"
         >
           <NuxtLink
-            :to="`/work/${project.slug}`"
+            :to="caseStudy"
             class="transition-colors hover:text-accent focus-visible:text-accent"
           >
             {{ project.title }}
@@ -79,7 +83,7 @@ const hasLinks = computed(() => Boolean(props.project.liveUrl || props.project.g
 
         <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
           <NuxtLink
-            :to="`/work/${project.slug}`"
+            :to="caseStudy"
             class="inline-flex items-center gap-1.5 text-sm font-medium text-accent transition-colors hover:text-accent-hover"
           >
             View Case Study

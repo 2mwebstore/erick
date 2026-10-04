@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { featuredProjects } = useSiteContent()
+const localePath = useLocalePath()
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const { featuredProjects } = useSiteContent()
     </div>
 
     <div class="reveal mt-16 flex justify-center">
-      <UiButton to="/work" variant="secondary">
+      <UiButton :to="localePath('/work')" variant="secondary">
         All work
         <Icon name="lucide:arrow-right" class="size-4" aria-hidden="true" />
       </UiButton>

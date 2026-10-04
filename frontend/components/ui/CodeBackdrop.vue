@@ -173,9 +173,9 @@ const TOKENS = [
           <span class="code-pane__dot code-pane__dot--c" />
           <span class="ml-2 truncate">~ deploy</span>
         </figcaption>
-        <pre class="code-pane__body"><span class="tok-prompt">$</span> go build ./cmd/api
+        <!-- <pre class="code-pane__body"><span class="tok-prompt">$</span> go build ./cmd/api
 <span class="tok-prompt">$</span> nuxt build
-<span class="tok-prompt">$</span> docker compose up -d<span class="caret" /></pre>
+<span class="tok-prompt">$</span> docker compose up -d<span class="caret" /></pre> -->
       </figure>
     </div>
 

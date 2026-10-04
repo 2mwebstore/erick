@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const sectionLink = useSectionLink()
+const localePath = useLocalePath()
 const {
   site,
   capabilities,
@@ -114,7 +115,7 @@ function print() {
         <li v-for="project in allProjects" :key="project.slug">
           <div class="flex flex-wrap items-baseline gap-x-3">
             <NuxtLink
-              :to="`/work/${project.slug}`"
+              :to="localePath(`/work/${project.slug}`)"
               class="text-[0.9375rem] font-medium tracking-tight text-fg transition-colors hover:text-accent"
             >
               {{ project.title }}
