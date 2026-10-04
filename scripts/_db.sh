@@ -86,8 +86,8 @@ db_load_env() {
 # address is private to Railway, so open a tunnel and pass its address — the
 # credentials still come from the service:
 #
-#   railway connect MySQL --tunnel-only --port 3307        # in another terminal
-#   DB_HOST=127.0.0.1 DB_PORT=3307 \
+#   railway connect MySQL --tunnel-only --port 3306        # in another terminal
+#   DB_HOST=127.0.0.1 DB_PORT=3306 \
 #     railway run --no-local --service MySQL ./scripts/migrate.sh status
 db_from_railway() {
   # Neither under `railway run` nor given a Railway URL: nothing to map.
@@ -118,9 +118,9 @@ db_from_railway() {
   if [[ -z "$DB_HOST" ]]; then
     echo "error: Railway passed no address this machine can reach — the database's" >&2
     echo "       public networking is off. Open a tunnel in another terminal:" >&2
-    echo "         railway connect MySQL --tunnel-only --port 3307" >&2
+    echo "         railway connect MySQL --tunnel-only --port 3306" >&2
     echo "       then pass its address:" >&2
-    echo "         DB_HOST=127.0.0.1 DB_PORT=3307 railway run --no-local --service MySQL $0 …" >&2
+    echo "         DB_HOST=127.0.0.1 DB_PORT=3306 railway run --no-local --service MySQL $0 …" >&2
     exit 64
   fi
 

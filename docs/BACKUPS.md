@@ -73,7 +73,7 @@ backup is a hypothesis.
 ```bash
 # 1. Stand up a throwaway database
 docker run -d --name restore-test -e MYSQL_ROOT_PASSWORD=test \
-  -e MYSQL_DATABASE=portfolio -p 3307:3306 mysql:8.4
+  -e MYSQL_DATABASE=portfolio -p 3306:3306 mysql:8.4
 
 # 2. Restore the newest archive into it
 gzip -dc "$(ls -1t backups/*.sql.gz | head -1)" \

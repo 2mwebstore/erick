@@ -198,10 +198,10 @@ SSH key registered once with `railway ssh keys add`.
 
 ```bash
 # terminal 1 — keep it open
-railway connect MySQL --tunnel-only --port 3307
+railway connect MySQL --tunnel-only --port 3306
 
 # terminal 2
-export DB_HOST=127.0.0.1 DB_PORT=3307
+export DB_HOST=127.0.0.1 DB_PORT=3306
 railway run --no-local --service MySQL ./scripts/backup-db.sh
 railway run --no-local --service MySQL ./scripts/migrate.sh status
 ```
