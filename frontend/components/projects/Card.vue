@@ -46,7 +46,7 @@ const caseStudy = computed(() => localePath(`/work/${props.project.slug}`))
             v-if="project.image"
             :src="project.image"
             :alt="project.imageAlt ?? `${project.title} — ${project.category}`"
-            class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            class="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             loading="lazy"
           />
           <ProjectsThumb v-else :slug="project.slug" :label="project.category" class="size-full" />
