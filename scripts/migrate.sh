@@ -40,6 +40,14 @@ table_exists() {
 
 log "backend: $(db_backend), target: $(db_target)"
 
+# Stop if the server cannot be reached. Carrying on prints an empty table list
+# and "no schema_migrations table yet", which reads like an empty database
+# rather than a tunnel that is not open.
+if ! db_mysql -e 'SELECT 1' >/dev/null; then
+  echo "error: cannot connect to $(db_target) — nothing was read or changed." >&2
+  exit 69
+fi
+
 if [[ "$DIRECTION" == "status" ]]; then
   log "tables currently in $DB_NAME:"
   db_mysql -N -B -e "SHOW TABLES FROM \`$DB_NAME\`;" | sed 's/^/  /' || true

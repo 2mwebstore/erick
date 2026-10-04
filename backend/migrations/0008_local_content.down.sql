@@ -1,0 +1,2 @@
+-- Cannot be undone: the content 0008 replaced is not kept anywhere. To go back,
+-- restore a backup taken before it ran (scripts/restore-db.sh).
