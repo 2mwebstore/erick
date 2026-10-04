@@ -57,6 +57,8 @@ export interface Project {
   liveUrl?: string
   githubUrl?: string
   caseStudy?: CaseStudy
+  /** ISO timestamp of the last edit; absent for the bundled fallback content. */
+  updatedAt?: string
 }
 
 export interface Capability {

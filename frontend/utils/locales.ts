@@ -24,3 +24,23 @@ export function isSupportedLocale(value: unknown): value is SupportedLocale {
 export function resolveLocale(value: unknown): SupportedLocale {
   return isSupportedLocale(value) ? value : DEFAULT_LOCALE
 }
+
+/**
+ * A page's path in one language: English unprefixed, every other language
+ * under /<code> (the i18n module's prefix_except_default strategy). The Khmer
+ * home page is /km, without a trailing slash.
+ *
+ * Canonical tags, JSON-LD and the sitemap all build their URLs through this, so
+ * they cannot disagree about where a page lives.
+ */
+export function localizedPath(path: string, locale: string): string {
+  const clean = path.startsWith('/') ? path : `/${path}`
+  if (!isSupportedLocale(locale) || locale === DEFAULT_LOCALE) return clean
+  return clean === '/' ? `/${locale}` : `/${locale}${clean}`
+}
+
+/** BCP 47 tag per language, for hreflang and JSON-LD inLanguage. */
+export const LOCALE_LANGUAGE: Record<SupportedLocale, string> = {
+  en: 'en-US',
+  km: 'km-KH',
+}

@@ -1,7 +1,22 @@
 import type { Project } from '~/types'
+import { LOCALE_LANGUAGE, localizedPath, resolveLocale, SUPPORTED_LOCALES } from '~/utils/locales'
 
 function origin(): string {
   return useRuntimeConfig().public.siteUrl.replace(/\/+$/, '')
+}
+
+function currentLocale() {
+  return resolveLocale(useI18n().locale.value)
+}
+
+/**
+ * Pages pass their English path; this returns it in the language being
+ * rendered. Without it every /km page declared its English twin as canonical,
+ * which tells a search engine the Khmer page is a duplicate to drop — the
+ * opposite of what its hreflang alternates say.
+ */
+function pagePath(path?: string): string {
+  return path === undefined ? useRoute().path : localizedPath(path, currentLocale())
 }
 
 /**
@@ -31,7 +46,7 @@ export function usePageSeo(input: {
 }) {
   const { site } = useSiteContent()
   const base = origin()
-  const canonical = absoluteUrl(input.path ?? useRoute().path, base)
+  const canonical = absoluteUrl(pagePath(input.path), base)
   const image = absoluteUrl(input.image ?? '/og-default.png', base)
 
   useHead({
@@ -99,7 +114,8 @@ export function usePersonSchema() {
   if (site.value.location) {
     person.address = { '@type': 'PostalAddress', addressCountry: site.value.location }
   }
-  if (site.value.profiles.length) person.sameAs = site.value.profiles.map((p) => p.href)
+  const sameAs = sameAsUrls(site.value.profiles.map((p) => p.href), base)
+  if (sameAs.length) person.sameAs = sameAs
 
   jsonLd('ld-identity', {
     '@context': 'https://schema.org',
@@ -111,7 +127,7 @@ export function usePersonSchema() {
         url: base,
         name: `${site.value.name} — ${site.value.role}`,
         description: toPlainText(site.value.description),
-        inLanguage: 'en',
+        inLanguage: SUPPORTED_LOCALES.map((code) => LOCALE_LANGUAGE[code]),
         publisher: { '@id': `${base}/#person` },
       },
     ],
@@ -121,7 +137,7 @@ export function usePersonSchema() {
 /** WebPage node for a specific route (§22). */
 export function useWebPageSchema(input: { name: string; description: string; path?: string }) {
   const base = origin()
-  const url = absoluteUrl(input.path ?? useRoute().path, base)
+  const url = absoluteUrl(pagePath(input.path), base)
 
   jsonLd('ld-webpage', {
     '@context': 'https://schema.org',
@@ -132,14 +148,18 @@ export function useWebPageSchema(input: { name: string; description: string; pat
     description: toPlainText(input.description),
     isPartOf: { '@id': `${base}/#website` },
     about: { '@id': `${base}/#person` },
-    inLanguage: 'en',
+    inLanguage: LOCALE_LANGUAGE[currentLocale()],
   })
 }
 
 /** CreativeWork node for a project case study (§22). */
 export function useProjectSchema(project: Project) {
+  const { t } = useI18n()
   const base = origin()
-  const url = absoluteUrl(`/work/${project.slug}`, base)
+  const locale = currentLocale()
+  const link = (path: string) => absoluteUrl(localizedPath(path, locale), base)
+  const url = link(`/work/${project.slug}`)
+  const home = t('nav.home')
 
   const work: Record<string, unknown> = {
     '@type': 'CreativeWork',
@@ -148,7 +168,7 @@ export function useProjectSchema(project: Project) {
     url,
     genre: project.category,
     creator: { '@id': `${base}/#person` },
-    inLanguage: 'en',
+    inLanguage: LOCALE_LANGUAGE[locale],
   }
 
   if (hasContent(project.description)) work.description = toPlainText(project.description)
@@ -162,8 +182,9 @@ export function useProjectSchema(project: Project) {
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: base },
-          { '@type': 'ListItem', position: 2, name: 'Work', item: `${base}/work` },
+          // The nav label is lower-case ("home") in English; a breadcrumb is a title.
+          { '@type': 'ListItem', position: 1, name: home.charAt(0).toUpperCase() + home.slice(1), item: link('/') },
+          { '@type': 'ListItem', position: 2, name: t('nav.work'), item: link('/work') },
           { '@type': 'ListItem', position: 3, name: project.title, item: url },
         ],
       },
