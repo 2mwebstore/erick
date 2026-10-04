@@ -56,6 +56,67 @@ type Config struct {
 	// SiteURL is the public site's origin, the one address the SEO audit
 	// crawls. Empty turns the audit off.
 	SiteURL string
+
+	// R2 is where uploaded images are stored. Unset, image fields take links only.
+	R2 R2Config
+}
+
+// R2Config is a Cloudflare R2 bucket, read from the same variables the other
+// projects on this account use.
+type R2Config struct {
+	AccountID       string
+	AccessKeyID     string
+	SecretAccessKey string
+	Bucket          string
+	// Endpoint is the S3 API address; derived from AccountID when unset.
+	Endpoint string
+	// PublicURL is the bucket's public address — an r2.dev URL or a custom
+	// domain — that uploaded images are served from.
+	PublicURL string
+	// MaxUploadBytes caps one image.
+	MaxUploadBytes int64
+}
+
+// EndpointURL is the S3 API address to use.
+func (r R2Config) EndpointURL() string {
+	if r.Endpoint != "" {
+		return r.Endpoint
+	}
+	if r.AccountID != "" {
+		return "https://" + r.AccountID + ".r2.cloudflarestorage.com"
+	}
+	return ""
+}
+
+// Missing names the variables still needed before uploads can be turned on.
+func (r R2Config) Missing() []string {
+	var missing []string
+	if r.EndpointURL() == "" {
+		missing = append(missing, "R2_ACCOUNT_ID (or R2_ENDPOINT)")
+	}
+	if r.AccessKeyID == "" {
+		missing = append(missing, "R2_ACCESS_KEY_ID")
+	}
+	if r.SecretAccessKey == "" {
+		missing = append(missing, "R2_SECRET_ACCESS_KEY")
+	}
+	if r.Bucket == "" {
+		missing = append(missing, "R2_BUCKET")
+	}
+	if r.PublicURL == "" {
+		missing = append(missing, "R2_PUBLIC_URL")
+	}
+	return missing
+}
+
+// Configured reports whether every variable is set.
+func (r R2Config) Configured() bool { return len(r.Missing()) == 0 }
+
+// Started reports whether any variable is set, so a half-finished setup can be
+// told apart from no setup at all.
+func (r R2Config) Started() bool {
+	return r.AccountID != "" || r.AccessKeyID != "" || r.SecretAccessKey != "" ||
+		r.Bucket != "" || r.Endpoint != "" || r.PublicURL != ""
 }
 
 // SeedAdminConfig creates the first account without a shell on the server,
@@ -131,6 +192,15 @@ func Load() (Config, error) {
 		// The frontend's variable is accepted too: on a host where both services
 		// share variables, the site address is then set in one place only.
 		SiteURL: env("SITE_URL", env("NUXT_PUBLIC_SITE_URL", "")),
+		R2: R2Config{
+			AccountID:       env("R2_ACCOUNT_ID", ""),
+			AccessKeyID:     env("R2_ACCESS_KEY_ID", ""),
+			SecretAccessKey: env("R2_SECRET_ACCESS_KEY", ""),
+			Bucket:          env("R2_BUCKET", ""),
+			Endpoint:        env("R2_ENDPOINT", ""),
+			PublicURL:       strings.TrimRight(env("R2_PUBLIC_URL", ""), "/"),
+			MaxUploadBytes:  int64(integer("UPLOAD_MAX_BYTES", 5<<20)),
+		},
 		DB: DBConfig{
 			Host:         env("DB_HOST", "127.0.0.1"),
 			Port:         env("DB_PORT", "3306"),
@@ -165,6 +235,20 @@ func Load() (Config, error) {
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return cfg, fmt.Errorf("config: SITE_URL must be an absolute http(s) URL, such as https://example.com")
 		}
+	}
+
+	// A missing R2 variable only turns uploads off (main logs which one). A
+	// malformed address is a mistake worth stopping for, as with SITE_URL.
+	for name, value := range map[string]string{"R2_PUBLIC_URL": cfg.R2.PublicURL, "R2_ENDPOINT": cfg.R2.Endpoint} {
+		if value == "" {
+			continue
+		}
+		if u, err := url.Parse(value); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return cfg, fmt.Errorf("config: %s must be an absolute http(s) URL", name)
+		}
+	}
+	if cfg.R2.MaxUploadBytes < 1 {
+		return cfg, fmt.Errorf("config: UPLOAD_MAX_BYTES must be positive")
 	}
 
 	if cfg.RateLimitRequests < 1 {

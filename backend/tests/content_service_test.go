@@ -205,6 +205,9 @@ func TestSaveSettingsAcceptsEveryDocumentedKey(t *testing.T) {
 	for key := range services.AllowedSettings {
 		values[key] = "value"
 	}
+	// These two have a format of their own (see TestImageFieldsTakeALinkOrAPath).
+	values["portrait"] = "/portrait.jpg"
+	values["profiles"] = `[{"label":"GitHub","href":"https://github.com/someone","image":"https://cdn.example.com/github.svg"}]`
 
 	err := contentService().SaveSettings(context.Background(), values)
 	if !errors.Is(err, services.ErrContentUnavailable) {
@@ -236,5 +239,71 @@ func TestSaveExperienceRequiresLabelAndTitle(t *testing.T) {
 	}
 	if invalid.Fields["label"] == "" || invalid.Fields["title"] == "" {
 		t.Fatalf("expected label and title errors, got %v", invalid.Fields)
+	}
+}
+
+// Image fields take a link (an upload to R2, or an image hosted anywhere) or a
+// path on this site. The value ends up in an <img src>, so nothing else is let in.
+func TestImageFieldsTakeALinkOrAPath(t *testing.T) {
+	valid := []string{
+		"",
+		"https://pub-0123456789abcdef.r2.dev/projects/2026/10/0a1b2c3d4e5f60718293a4b5c6d7e8f9.webp",
+		"https://i.imgur.com/8HbEl4Q.png",
+		"http://localhost:3000/portrait.jpg",
+		"/portrait.jpg",
+		"/projects/bubble-white.png",
+	}
+	invalid := []string{
+		"javascript:alert(1)",
+		"data:image/png;base64,AAAA",
+		"//evil.example/x.png",
+		"portrait.jpg",
+		"https://",
+		"/portrait.jpg\" onerror=\"alert(1)",
+		"/two words.png",
+		"https://example.com/" + strings.Repeat("a", 250) + ".png",
+	}
+
+	for _, value := range valid {
+		p := validProject()
+		p.Image = value
+		if fields, _ := saveProject(t, p); fields["image"] != "" {
+			t.Errorf("project image %q was refused: %s", value, fields["image"])
+		}
+		err := contentService().SaveSettings(context.Background(), map[string]string{"portrait": value})
+		if !errors.Is(err, services.ErrContentUnavailable) {
+			t.Errorf("portrait %q was refused: %v", value, err)
+		}
+	}
+
+	for _, value := range invalid {
+		p := validProject()
+		p.Image = value
+		if fields, _ := saveProject(t, p); fields["image"] == "" {
+			t.Errorf("project image %q was accepted", value)
+		}
+		var bad *services.ValidationError
+		err := contentService().SaveSettings(context.Background(), map[string]string{"portrait": value})
+		if !errors.As(err, &bad) || bad.Fields["portrait"] == "" {
+			t.Errorf("portrait %q was accepted", value)
+		}
+	}
+}
+
+func TestProfileLogosAreCheckedLikeOtherImages(t *testing.T) {
+	ok := `[{"label":"GitHub","href":"https://github.com/someone","image":"https://cdn.example.com/github.png"},{"label":"Site","href":"/","image":""}]`
+	if err := contentService().SaveSettings(context.Background(), map[string]string{"profiles": ok}); !errors.Is(err, services.ErrContentUnavailable) {
+		t.Errorf("valid profiles were refused: %v", err)
+	}
+
+	for name, value := range map[string]string{
+		"a script URL as a logo": `[{"label":"x","href":"/","image":"javascript:alert(1)"}]`,
+		"not JSON":               `not json`,
+	} {
+		var bad *services.ValidationError
+		err := contentService().SaveSettings(context.Background(), map[string]string{"profiles": value})
+		if !errors.As(err, &bad) || bad.Fields["profiles"] == "" {
+			t.Errorf("%s was accepted", name)
+		}
 	}
 }

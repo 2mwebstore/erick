@@ -257,6 +257,13 @@ export interface AuditEntry {
   created_at: string
 }
 
+/** Whether image fields can upload to R2, and what they accept. */
+export interface UploadSettings {
+  enabled: boolean
+  maxBytes?: number
+  types?: string[]
+}
+
 /** One finding of the SEO check (backend/internal/seoaudit). */
 export interface SeoCheck {
   id: string

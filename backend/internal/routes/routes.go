@@ -11,6 +11,7 @@ import (
 	"github.com/kongchansila/portfolio/backend/internal/middleware"
 	"github.com/kongchansila/portfolio/backend/internal/repositories"
 	"github.com/kongchansila/portfolio/backend/internal/services"
+	"github.com/kongchansila/portfolio/backend/internal/uploads"
 )
 
 type Dependencies struct {
@@ -22,6 +23,7 @@ type Dependencies struct {
 	AuthService    *services.AuthService
 	AuditService   *services.AuditService
 	SEOAudit       *services.SEOAuditService
+	Uploader       *uploads.Uploader
 	Messages       *repositories.ContactRepository
 	Version        string
 	RateLimiter    *middleware.RateLimiter
@@ -48,6 +50,7 @@ func New(deps Dependencies) http.Handler {
 		deps.AuditService, deps.Logger, deps.Config.TrustedProxy,
 	)
 	seo := handlers.NewSEOHandler(deps.SEOAudit, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
+	upload := handlers.NewUploadHandler(deps.Uploader, deps.AuditService, deps.Logger, deps.Config.TrustedProxy)
 
 	// ── Public ───────────────────────────────────────────────────────────────
 
@@ -129,6 +132,16 @@ func New(deps Dependencies) http.Handler {
 	protect("DELETE /v1/admin/pillars/{id}", admin.DeletePillar)
 
 	protect("PUT /v1/admin/settings", admin.SaveSettings)
+
+	// Images for the admin panel's image fields. The only route allowed a body
+	// bigger than the admin cap: the image itself, plus room for the form.
+	uploadChain := middleware.Chain(
+		middleware.MaxBody(deps.Config.R2.MaxUploadBytes+1<<20),
+		middleware.RequireAuth(deps.AuthService, deps.Logger),
+		middleware.CSRF,
+	)
+	protect("GET /v1/admin/uploads", upload.Settings)
+	mux.Handle("POST /v1/admin/uploads/image", uploadChain(http.HandlerFunc(upload.Image)))
 
 	// Read-only diagnostics, so editors get it too. It only ever crawls the
 	// configured site, and one run at a time.

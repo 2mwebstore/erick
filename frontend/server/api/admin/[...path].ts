@@ -24,7 +24,12 @@ export default defineEventHandler(async (event) => {
 
   const method = event.method
   const mutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'
-  const body = mutating ? await readRawBody(event, 'utf8') : undefined
+  // Bytes, not text: an image upload is binary, and decoding it as UTF-8 would
+  // replace every invalid sequence and corrupt the file. JSON passes through
+  // the same way, with its content-type header.
+  const body = mutating ? await readRawBody(event, false) : undefined
+  // An upload goes on from here to R2, which takes longer than a JSON save.
+  const timeout = path.startsWith('uploads/') ? 60_000 : Number(config.apiTimeoutMs) || 8000
 
   try {
     const response = await $fetch.raw(`/v1/admin/${path}`, {
@@ -33,7 +38,7 @@ export default defineEventHandler(async (event) => {
       query,
       body,
       headers: upstreamHeaders(event),
-      timeout: Number(config.apiTimeoutMs) || 8000,
+      timeout,
       // Non-2xx is handled below rather than thrown, so field errors and 401s
       // reach the client unchanged.
       ignoreResponseError: true,

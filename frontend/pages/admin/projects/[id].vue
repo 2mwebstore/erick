@@ -233,12 +233,12 @@ useHead({ title: computed(() => (isNew.value ? 'New project' : project.value.tit
           </div>
 
           <div class="grid gap-5 sm:grid-cols-2">
-            <AdminInput
+            <AdminImageField
               id="p-image"
               v-model="project.image"
-              label="Image path"
+              label="Image"
+              folder="projects"
               :error="errors.image"
-              hint="e.g. /projects/name.png — leave empty for the generated thumbnail."
             />
             <AdminInput
               id="p-image-alt"

@@ -24,6 +24,7 @@ import (
 	"github.com/kongchansila/portfolio/backend/internal/routes"
 	"github.com/kongchansila/portfolio/backend/internal/seoaudit"
 	"github.com/kongchansila/portfolio/backend/internal/services"
+	"github.com/kongchansila/portfolio/backend/internal/uploads"
 )
 
 // version is overridden at build time:
@@ -130,6 +131,21 @@ func run() error {
 		log.Warn("SITE_URL is not set — the SEO audit in the admin panel is off")
 	}
 
+	// Image uploads go to R2. Without it, image fields still take a pasted link.
+	var uploader *uploads.Uploader
+	switch {
+	case cfg.R2.Configured():
+		store := uploads.NewR2Store(cfg.R2.EndpointURL(), cfg.R2.AccessKeyID, cfg.R2.SecretAccessKey, cfg.R2.Bucket, nil)
+		uploader = uploads.NewUploader(store, cfg.R2.PublicURL, cfg.R2.MaxUploadBytes)
+		log.Info("image uploads on", slog.String("bucket", cfg.R2.Bucket), slog.String("public_url", cfg.R2.PublicURL))
+	case cfg.R2.Started():
+		// Half set up: off, and loudly, rather than failing on the first upload.
+		log.Error("R2 is partly configured — image uploads are off until these are set",
+			slog.Any("missing", cfg.R2.Missing()))
+	default:
+		log.Info("R2 is not configured — image fields take links only")
+	}
+
 	handler := routes.New(routes.Dependencies{
 		Config:         cfg,
 		Logger:         log,
@@ -139,6 +155,7 @@ func run() error {
 		AuthService:    authService,
 		AuditService:   audit,
 		SEOAudit:       services.NewSEOAuditService(auditor, log),
+		Uploader:       uploader,
 		Messages:       messages,
 		Version:        version,
 		RateLimiter:    limiter,

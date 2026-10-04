@@ -130,21 +130,64 @@ it is verifiable.
 The sitemap, the work index, the resume's project list, the "next project" link
 and the structured data all pick it up automatically. Nothing else needs editing.
 
+## Images: upload or link
+
+Every image field in `/admin`, meaning the portrait, the profile logos and each
+project's image, takes one of two things:
+
+- **An upload.** Click **Upload** and choose a JPEG, PNG, WebP, GIF or AVIF
+  file, up to 5 MB. It is stored in Cloudflare R2, and its public address fills
+  the field. The button only appears once R2 is set up (below).
+- **A link.** Paste any `https://` image address, or a path to a file in
+  `frontend/public/` such as `/portrait.jpg`.
+
+Either way the field holds one address, and the site shows the image from it.
+The API refuses anything else: a `javascript:` address, `//host`, or a bare
+file name. An uploaded file is checked by its content, so an HTML page renamed
+`photo.jpg` is refused, and SVG is refused because it can carry script.
+
+Images from a link or from R2 are shown exactly as uploaded: `@nuxt/image` only
+resizes and converts files in `public/`. Upload WebP or AVIF at about the size
+it is shown (800 px wide is plenty for the portrait).
+
+Replacing an image does not delete the old file from the bucket. Remove unused
+files in the Cloudflare dashboard if you want the space back.
+
+### Setting up R2
+
+1. Cloudflare → **R2** → **Create bucket**, e.g. `kongchansila-media`.
+2. Make it public: bucket → **Settings** → **Custom Domains** → connect a
+   subdomain such as `cdn.kongchansila.com`. The **r2.dev** development URL also
+   works, but Cloudflare rate-limits it and does not cache it, so use it for
+   testing only.
+3. R2 → **Manage API tokens** → **Create API token**: permission **Object Read
+   & Write**, applied to this bucket only. Copy the Access Key ID and Secret
+   Access Key; the secret is shown once.
+4. On the API service (Railway: **backend-portfolio** → **Variables**), set:
+
+   | Variable | Value |
+   | --- | --- |
+   | `R2_ACCOUNT_ID` | Your Cloudflare account ID (R2 overview page) |
+   | `R2_ACCESS_KEY_ID` | From step 3 |
+   | `R2_SECRET_ACCESS_KEY` | From step 3 |
+   | `R2_BUCKET` | `kongchansila-media` |
+   | `R2_PUBLIC_URL` | `https://cdn.kongchansila.com` (or the r2.dev URL) |
+
+   Optional: `UPLOAD_MAX_BYTES` (default 5242880, that is 5 MB).
+
+The API logs `image uploads on` when it starts. If only some variables are set,
+uploads stay off, and the log names the ones missing; the site keeps working.
+Uploads go through the API, so the bucket needs no CORS rules.
+
 ## Your photo
 
 The hero has a portrait column. Until you fill it, it shows an editable frame
 that says what to do — never a stock face.
 
-1. Put the image in `frontend/public/`, e.g. `frontend/public/portrait.jpg`.
-2. Set it in `frontend/content/site.ts`:
+Set it in `/admin` → **Settings** → **Photo**: upload the image or paste its
+link, then write the alt text.
 
-```ts
-portrait: '/portrait.jpg',
-portraitAlt: 'Kong Chansila, Full-Stack Software Developer',
-```
-
-Use a 4:5 or square crop at 800px wide or more — `@nuxt/image` handles
-responsive sizing and format conversion from there. The frame is 4:5, so a
+Use a 4:5 or square crop at 800px wide or more. The frame is 4:5, so a
 portrait-orientation crop fills it without letterboxing.
 
 Write `portraitAlt` describing the person, not the file. "Kong Chansila,
@@ -179,15 +222,11 @@ Projects with no `image` render a generated geometric thumbnail derived from the
 slug — deliberate, on-brand, and honest about being a placeholder rather than a
 stock photo.
 
-To use a real screenshot, put it in `frontend/public/projects/` and reference it:
-
-```ts
-image: '/projects/inventory-system.png',
-imageAlt: 'The inventory dashboard showing stock levels by branch',
-```
-
-`@nuxt/image` handles responsive sizing and AVIF/WebP conversion. Always write
-`imageAlt` — it is a real accessibility requirement, not metadata.
+To use a real screenshot, open the project in `/admin` and upload it, or paste
+its link, in the **Image** field (see "Images: upload or link" above). Then
+describe it in **Image alt text**, e.g. "The inventory dashboard showing stock
+levels by branch". Always write the alt text — it is a real accessibility
+requirement, not metadata.
 
 ## Things you will want to change early
 

@@ -237,12 +237,12 @@ useHead({ title: 'Settings' })
 
       <AdminPanel title="Photo">
         <div class="grid gap-4 sm:grid-cols-2">
-          <AdminInput
+          <AdminImageField
             id="s-portrait"
             v-model="settings.portrait"
-            label="Portrait path"
+            label="Portrait"
+            folder="portraits"
             :error="errors.portrait"
-            hint="Put the file in public/ and reference it, e.g. /portrait.jpg. Empty shows the editable frame."
           />
           <AdminInput
             id="s-portrait-alt"
@@ -278,30 +278,19 @@ useHead({ title: 'Settings' })
           <li
             v-for="(profile, i) in profiles"
             :key="i"
-            class="grid gap-3 sm:grid-cols-[auto_1fr_2fr_2fr_auto] sm:items-end"
+            class="grid gap-3 sm:grid-cols-[1fr_2fr_3fr_auto] sm:items-start"
           >
-            <!-- Preview: the fastest way to see a logo URL is wrong. -->
-            <span
-              class="inline-flex size-10 items-center justify-center rounded-lg border border-border bg-surface"
-            >
-              <img
-                v-if="profile.image"
-                :src="profile.image"
-                alt=""
-                class="size-5 object-contain"
-                loading="lazy"
-              >
-              <Icon v-else name="lucide:image-off" class="size-4 text-fg-subtle" aria-hidden="true" />
-            </span>
             <AdminInput :id="`pr-label-${i}`" v-model="profile.label" label="Label" />
             <AdminInput :id="`pr-href-${i}`" v-model="profile.href" label="URL" />
-            <AdminInput
+            <!-- The field shows its own preview: the fastest way to see a logo address is wrong. -->
+            <AdminImageField
               :id="`pr-image-${i}`"
               v-model="profile.image"
-              label="Logo image URL"
-              hint="Any image URL, or a file in public/ such as /github.svg"
+              label="Logo"
+              folder="profiles"
+              fit="contain"
             />
-            <div class="flex items-end">
+            <div class="flex items-end sm:pt-6">
               <UiButton variant="ghost" size="sm" @click="removeProfile(i)">
                 <Icon name="lucide:trash-2" class="size-3.5" aria-hidden="true" />
               </UiButton>

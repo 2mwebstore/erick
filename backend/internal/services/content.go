@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -173,7 +175,7 @@ func (s *ContentService) SaveProject(ctx context.Context, p *models.Project) (in
 	requireText(fields, "category", p.Category, 1, categoryMax)
 	limitText(fields, "description", p.Description, longTextMax)
 	limitText(fields, "summary", p.Summary, longTextMax)
-	limitText(fields, "image", p.Image, 255)
+	checkImage(fields, "image", strings.TrimSpace(p.Image))
 	limitText(fields, "imageAlt", p.ImageAlt, 255)
 
 	// A half-written URL is worse than none, so reject anything that is not
@@ -538,6 +540,12 @@ func (s *ContentService) SaveSettings(ctx context.Context, values map[string]str
 			fields[key] = fmt.Sprintf("Keep this under %d characters.", longTextMax)
 			continue
 		}
+		switch key {
+		case "portrait":
+			checkImage(fields, key, strings.TrimSpace(value))
+		case "profiles":
+			checkProfileImages(fields, value)
+		}
 		accepted[key] = strings.TrimSpace(value)
 	}
 
@@ -588,6 +596,61 @@ func requireText(fields map[string]string, name, value string, min, max int) {
 func limitText(fields map[string]string, name, value string, max int) {
 	if len([]rune(value)) > max {
 		fields[name] = fmt.Sprintf("Keep this under %d characters.", max)
+	}
+}
+
+// imageMax matches the narrowest column an image address is stored in
+// (projects.image).
+const imageMax = 255
+
+// checkImage accepts what the admin panel's image fields produce: a full
+// http(s) link — an upload to R2, or an image hosted anywhere — or a path on
+// this site such as /portrait.jpg. Anything else, a javascript: URL or a
+// protocol-relative //host included, is refused.
+func checkImage(fields map[string]string, name, value string) {
+	if value == "" {
+		return
+	}
+	if len(value) > imageMax {
+		fields[name] = fmt.Sprintf("Keep the image address under %d characters.", imageMax)
+		return
+	}
+	const invalid = "Use a link starting with https://, or a path on this site such as /portrait.jpg."
+	if strings.ContainsAny(value, " \t\r\n\"'<>\\") {
+		fields[name] = invalid
+		return
+	}
+	switch {
+	case strings.HasPrefix(value, "https://"), strings.HasPrefix(value, "http://"):
+		if u, err := url.Parse(value); err != nil || u.Host == "" {
+			fields[name] = invalid
+		}
+	case strings.HasPrefix(value, "/") && !strings.HasPrefix(value, "//"):
+	default:
+		fields[name] = invalid
+	}
+}
+
+// checkProfileImages applies checkImage to each profile's logo. Profiles are
+// stored as a JSON array; only the image is checked here.
+func checkProfileImages(fields map[string]string, value string) {
+	if strings.TrimSpace(value) == "" {
+		return
+	}
+	var profiles []struct {
+		Image string `json:"image"`
+	}
+	if err := json.Unmarshal([]byte(value), &profiles); err != nil {
+		fields["profiles"] = "The profile links could not be read."
+		return
+	}
+	for i, p := range profiles {
+		one := map[string]string{}
+		checkImage(one, "image", strings.TrimSpace(p.Image))
+		if msg, bad := one["image"]; bad {
+			fields["profiles"] = fmt.Sprintf("Profile %d logo: %s", i+1, msg)
+			return
+		}
 	}
 }
 
