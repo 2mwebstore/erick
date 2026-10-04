@@ -80,6 +80,9 @@ export default defineNuxtConfig({
       // Set NUXT_PUBLIC_SITE_URL to the real origin before deploying.
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
       contactEnabled: process.env.NUXT_PUBLIC_CONTACT_ENABLED !== 'false',
+      // Google Search Console ownership code(s); read at runtime, so setting it
+      // needs a restart, not a rebuild. See docs/SEARCH_CONSOLE.md.
+      googleSiteVerification: process.env.NUXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
     },
   },
 

@@ -2,6 +2,40 @@ import { describe, expect, it } from 'vitest'
 import { trailingSlashTarget } from '~/server/utils/trailing-slash'
 import { absoluteUrl, sameAsUrls, slugSeed, yearRange, yearsOfExperience } from '~/utils/format'
 import { localizedPath } from '~/utils/locales'
+import { siteVerificationTokens } from '~/utils/search-console'
+
+describe('siteVerificationTokens', () => {
+  const code = 'aBcD-1234_efGH5678ijKL9012mnOP3456qrST7890uvw'
+
+  it('reads a bare code', () => {
+    expect(siteVerificationTokens(code)).toEqual([code])
+  })
+
+  it('reads the whole <meta> tag pasted from Search Console', () => {
+    expect(siteVerificationTokens(`<meta name="google-site-verification" content="${code}" />`)).toEqual([code])
+  })
+
+  it('reads one code per owner, separated by commas or spaces', () => {
+    expect(siteVerificationTokens(`${code}, second-owner-code-123 ${code}`)).toEqual([code, 'second-owner-code-123'])
+  })
+
+  it('reads a pasted tag and a bare code side by side', () => {
+    expect(
+      siteVerificationTokens(`<meta name="google-site-verification" content="${code}" />, second-owner-code-123`),
+    ).toEqual([code, 'second-owner-code-123'])
+  })
+
+  it('is empty when the variable is unset', () => {
+    expect(siteVerificationTokens(undefined)).toEqual([])
+    expect(siteVerificationTokens('')).toEqual([])
+  })
+
+  // The value lands in the <head> of every page.
+  it('drops anything that is not a code', () => {
+    expect(siteVerificationTokens('"><script>alert(1)</script>')).toEqual([])
+    expect(siteVerificationTokens('short')).toEqual([])
+  })
+})
 
 describe('localizedPath', () => {
   it('leaves English paths unprefixed', () => {

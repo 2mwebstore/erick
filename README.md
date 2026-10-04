@@ -160,6 +160,7 @@ framework: `net/http` with `ServeMux` method patterns covers the whole API.
 | [SECURITY.md](docs/SECURITY.md) | Controls per layer, secrets, pre-production checklist |
 | [BACKUPS.md](docs/BACKUPS.md) | Schedule, off-site copies, restore drill |
 | [MONITORING.md](docs/MONITORING.md) | Health endpoints, what to watch, incident triage |
+| [SEARCH_CONSOLE.md](docs/SEARCH_CONSOLE.md) | Verifying the site with Google, submitting the sitemap |
 | [TESTING.md](docs/TESTING.md) | Test layout, manual checklist, Lighthouse, CI |
 
 ## Git workflow
