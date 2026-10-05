@@ -154,7 +154,18 @@ export default defineNuxtConfig({
           tagPosition: 'head',
         },
       ],
-      link: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
+      // The icon set in public/. favicon.ico also answers browsers and crawlers
+      // that ask for /favicon.ico without reading these tags; its 48px size and
+      // the 192px PNG give Google Search one it can use, since it wants a
+      // multiple of 48px. tests/favicon.test.ts checks every file listed exists.
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
+        { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/android-chrome-192x192.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' },
+      ],
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'theme-color', content: '#0a1931', media: '(prefers-color-scheme: dark)' },
