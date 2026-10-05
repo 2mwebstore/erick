@@ -155,14 +155,17 @@ export default defineNuxtConfig({
         },
       ],
       // The icon set in public/. favicon.ico also answers browsers and crawlers
-      // that ask for /favicon.ico without reading these tags; its 48px size and
-      // the 192px PNG give Google Search one it can use, since it wants a
-      // multiple of 48px. tests/favicon.test.ts checks every file listed exists.
+      // that ask for /favicon.ico without reading these tags. Google Search
+      // wants a favicon a multiple of 48px square, which the 48 and 96 px PNGs
+      // are. The home-screen icons are listed in site.webmanifest, and Windows
+      // tiles in browserconfig.xml. tests/favicon.test.ts checks that every
+      // file named here and in the manifest exists.
       link: [
         { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/favicon-96x96.png' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48x48.png' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
-        { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/android-chrome-192x192.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
       ],

@@ -33,6 +33,13 @@ describe('favicon', () => {
     for (const icon of manifest.icons) expect(exists(icon.src), icon.src).toBe(true)
   })
 
+  it('has a Windows tile config whose image exists', () => {
+    const config = readFileSync(resolve(publicDir, 'browserconfig.xml'), 'utf8')
+    const images = [...config.matchAll(/src="([^"]+)"/g)].map((m) => m[1]!)
+    expect(images.length).toBeGreaterThan(0)
+    for (const src of images) expect(exists(src), src).toBe(true)
+  })
+
   // Modern browsers prefer an SVG icon when one is linked, so a leftover one
   // would keep showing instead of the PNG set.
   it('does not leave the old SVG icon behind', () => {
