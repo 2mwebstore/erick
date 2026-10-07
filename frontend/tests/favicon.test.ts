@@ -40,10 +40,20 @@ describe('favicon', () => {
     for (const src of images) expect(exists(src), src).toBe(true)
   })
 
-  // Modern browsers prefer an SVG icon when one is linked, so a leftover one
-  // would keep showing instead of the PNG set.
-  it('does not leave the old SVG icon behind', () => {
+  // Modern browsers prefer an SVG icon when one is linked, so a leftover link
+  // would keep showing the old monogram instead of the PNG set.
+  it('links no SVG icon', () => {
     const config = readFileSync(resolve(process.cwd(), 'nuxt.config.ts'), 'utf8')
-    expect(config).not.toContain('favicon.svg')
+    const iconLinks = [...config.matchAll(/\{ rel: '(?:icon|apple-touch-icon)'[^}]*\}/g)].map((m) => m[0])
+    expect(iconLinks.some((link) => link.includes('.svg'))).toBe(false)
+    expect(exists('/favicon.svg')).toBe(false)
+  })
+
+  // The old address still gets asked for; it must lead to an icon that exists.
+  it('redirects the old /favicon.svg to the current icon', () => {
+    const config = readFileSync(resolve(process.cwd(), 'nuxt.config.ts'), 'utf8')
+    const target = /'\/favicon\.svg': \{ redirect: \{ to: '([^']+)', statusCode: 301 \} \}/.exec(config)?.[1]
+    expect(target, 'a 301 rule for /favicon.svg').toBeDefined()
+    expect(exists(target!), target).toBe(true)
   })
 })

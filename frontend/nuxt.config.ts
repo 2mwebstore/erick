@@ -129,6 +129,12 @@ export default defineNuxtConfig({
       '/km/resume': { swr: 600 },
       '/sitemap.xml': { swr: 3600 },
 
+      // The old monogram icon, removed when the photo icon set replaced it.
+      // Google and browsers that saw it keep asking for this address; a
+      // permanent redirect hands them the current icon rather than the
+      // not-found page. Nothing on the site links here any more.
+      '/favicon.svg': { redirect: { to: '/favicon-96x96.png', statusCode: 301 } },
+
       // Never cache anything authenticated or written.
       // The admin panel is client-rendered: it needs no SEO, and rendering it on
       // the server would mean forwarding session cookies through SSR for no gain.
